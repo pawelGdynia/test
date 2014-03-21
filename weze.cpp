@@ -677,6 +677,86 @@ void PutZnak(char* znak)
   WriteConsole(hStdOut, znak, 1, &count, NULL);
 } // PutZnak
 
+#define G0 0
+#define D0 1
+#define L0 2
+#define P0 3
+//---------------------------------------------------------------------------
+//! Ustal po³o¿enie punktów wzglêdem siebie
+short TypSasiada(short x, short y, short x2, short y2)
+{
+  if (x == x2) // nad i pod
+    {
+    if (y > y2)
+      return G0;
+    else
+      return D0;
+    }
+  if (x > x2)
+    return L0;
+  else
+    return P0;
+} // TypSasiada
+
+//---------------------------------------------------------------------------
+//! Zamieñ sasiedztwo na znak segmentu
+char ZnakSegmentu(short* tab)
+{
+  if (tab[G0] && tab[D0])
+    return 186;
+  if (tab[L0] && tab[P0])
+    return 205;
+  if (tab[G0] && tab[P0])
+    return 200;
+  if (tab[G0] && tab[L0])
+    return 188;
+  if (tab[D0] && tab[P0])
+    return 201;
+  //if (tb[D0] && tab[L0])
+    return 187;
+} // ZnakSegmentu
+
+//---------------------------------------------------------------------------
+//! Ustal jaki znak pozwala na pokazanie kszta³tu
+char ZnakWeza(short x, short y)
+{
+  OBIEKTINFO_ZWIERZ* ptrZ;
+  char znak = '*';
+  short a, poz, t;
+  short bs[4];
+
+  poz = GetPozZwierz(x,y);
+  ptrZ = listaZwierz+poz;
+
+  // sprawdŸ który pasuje, od tego zale¿y wygl¹d
+  for (a=0; a<ptrZ->z_size; a++)
+    if (ptrZ->z_x[a] == x
+      &&ptrZ->z_y[a] == y) // to ten!
+      {
+      if (a == 0) // g³owa
+        {
+        // g³owa ma literkê
+        //znak = 'A' + ptrZ->z_zapas -1;
+        znak = '8';
+        return znak;
+        }
+      if (a == ptrZ->z_size-1)
+        {
+        // koniec ogona to kropka
+        znak = '.';
+        return znak;
+        }
+      // zwyk³e znaki segmentowe
+      memset(bs, 0, sizeof(bs));
+      t = TypSasiada(ptrZ->z_x[a], ptrZ->z_y[a], ptrZ->z_x[a-1], ptrZ->z_y[a-1]);
+      bs[t] = 1;
+      t = TypSasiada(ptrZ->z_x[a], ptrZ->z_y[a], ptrZ->z_x[a+1], ptrZ->z_y[a+1]);
+      bs[t] = 1;
+      znak = ZnakSegmentu(bs);
+      }
+  return znak;
+} // ZnakWeza
+
 //---------------------------------------------------------------------------
 //! Zamieñ punkt mapy na literkê do wydruku
 void DrukujZnakMapy(short x, short y)
@@ -711,16 +791,7 @@ void DrukujZnakMapy(short x, short y)
   // zwierzeta
   if (CzyMapaZwierz(x,y)) // jest zwierz w tabeli
     {
-    poz = GetPozZwierz(x,y);
-
-    if (listaZwierz[poz].z_common.x == x
-      &&listaZwierz[poz].z_common.y == y)
-      {
-      // g³owa ma literkê
-      znak[0] = 'A' + listaZwierz[poz].z_zapas -1;
-      }
-    else
-      znak[0] = '%'; // reszta cia³a - znaczki
+    znak[0] = ZnakWeza(x,y);
     if (listaZwierz[poz].z_def == 0)
       SetTextColor(FOREGROUND_RED);
     else // 2
