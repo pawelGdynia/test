@@ -616,6 +616,16 @@ int main(int argc, char* argv[])
     znak = getch(); // praca krokowa
     }
   SetTextColor(FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
+  if (znak == '1')
+    czestoPokaz = 1;
+  if (znak == '2')
+    czestoPokaz = 10;
+  if (znak == '3')
+    czestoPokaz = 100;
+  if (znak == '4')
+    czestoPokaz = 1000;
+
+
   if (znak == 'q')
     {
     delete mapa;
