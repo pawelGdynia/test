@@ -153,7 +153,7 @@ short losowe[24][4] = { // wszystkie mo¿liwe kolejnoœci dla 4 elementów
 void UstalRandom4(short* num4)
 {
   short a;
-  a = random(24); // wybierz - która kolejnoœæ z 24 zostanie u¿yta
+  a = 1;//random(24); // wybierz - która kolejnoœæ z 24 zostanie u¿yta
   num4[0] = losowe[a][0];
   num4[1] = losowe[a][1];
   num4[2] = losowe[a][2];
@@ -183,6 +183,13 @@ short CzyMapaRoslina(short x, short y)
 } // CzyMapaRoslina
 
 //---------------------------------------------------------------------------
+//! Któr¹ pozycjê w tabeli zajmuje roœlina?
+short GetPozRoslina(short x, short y)
+{
+  return mapa[x][y].pm_roslina.pm1_poz;
+} // GetPozRoslina
+
+//---------------------------------------------------------------------------
 //! Sprawdza czy dla podanych wspó³rzêdnych wystêpuje obiekt - roœlina
 short CzyMapaZwierz(short x, short y)
 {
@@ -193,6 +200,13 @@ short CzyMapaZwierz(short x, short y)
 } // CzyMapaZwierz
 
 //---------------------------------------------------------------------------
+//! Któr¹ pozycjê w tabeli zajmuje zwierz?
+short GetPozZwierz(short x, short y)
+{
+  return mapa[x][y].pm_zwierz.pm1_poz;
+} // GetPozZwierz
+
+//---------------------------------------------------------------------------
 //! Uniwersalna procedura sprawdzania czy roœlina jadalna
 short RoslinaJadalna(short x, short y)
 {
@@ -201,7 +215,7 @@ short RoslinaJadalna(short x, short y)
 
   if (CzyMapaRoslina(x,y)==0)
     return 0; // nie ma tam roœliny!
-  poz = mapa[x][y].pm_roslina.pm1_poz; // która roœlina z listy
+  poz = GetPozRoslina(x,y); // która roœlina z listy
   poziomAkt = listaRoslin[poz].oir_poziom;
   ktoraDef  = listaRoslin[poz].oir_defpoz;
   maxPoziomDef = defRoslina[ktoraDef].defr_czasWzrostu; // poziom maksymalny z defincji
@@ -333,7 +347,7 @@ void PrzetworzMape(void)
       {
       if (CzyMapaRoslina(x,y)) // tu jest roœlina
         {
-        poz = mapa[x][y].pm_roslina.pm1_poz;
+        poz = GetPozRoslina(x,y);
         if (listaRoslin[poz].oir_poziom < 9)
           listaRoslin[poz].oir_poziom++; // wzrost +1
         }
@@ -341,7 +355,7 @@ void PrzetworzMape(void)
 
   // zwierzêta
   for (poz=0; poz<ileZwierz; poz++)
-    if (listaZwierz[poz].oiz_defpoz >= 0) // pomijaj martwe
+    if (listaZwierz[poz].oiz_defpoz >= 0) // pomijaj martwe (czyli ujemne)
       {
       mapX = listaZwierz[poz].oiz_common.oic_x;
       mapY = listaZwierz[poz].oiz_common.oic_y;
@@ -368,8 +382,8 @@ void PrzetworzMape(void)
         {
         if (RoslinaJadalna(destX, destY))
           {
-          poz2 = mapa[destX][destY].pm_roslina.pm1_poz;
-          if (CzyMapaRoslina(destX,destY)) // jest trawa w tabeli
+          poz2 = GetPozRoslina(destX, destY);
+          if (CzyMapaRoslina(destX, destY)) // jest trawa w tabeli
             {
             listaRoslin[poz2].oir_poziom = 0;
             if (listaZwierz[poz].oiz_zapas < 20)
@@ -386,8 +400,8 @@ void PrzetworzMape(void)
       if (listaZwierz[poz].oiz_zapas <= 0)
         {
         // 1.usuñ dane z mapy
-        mapa[mapX][mapY].pm_zwierz.pm1_tab = 0;
-        mapa[mapX][mapY].pm_zwierz.pm1_poz = 0;
+        mapa[destX][destY].pm_zwierz.pm1_tab = 0;
+        mapa[destX][destY].pm_zwierz.pm1_poz = 0;
 
         // 2.oznakuj w tabeli jako martwy
         listaZwierz[poz].oiz_defpoz = -1;
@@ -411,8 +425,8 @@ void PrzetworzMape(void)
   for (poz=ileZwierz-1; poz>=0; poz--)
     if (listaZwierz[poz].oiz_defpoz == -1) // do usuniêcia
       {
-      if (ileZwierz != poz) // to nie jest ostatni
-        memmove(listaZwierz+poz, listaZwierz+poz+1, sizeof(listaZwierz[0])*(ileZwierz-poz));
+      if (poz != (ileZwierz-1)) // to nie jest ostatni
+        memmove(listaZwierz+poz, listaZwierz+poz+1, sizeof(listaZwierz[0])*(ileZwierz-poz-1));
       ileZwierz--;
       martwe++;
       }
@@ -462,7 +476,7 @@ void DrukujZnakMapy(short x, short y)
   // roœliny
   if (CzyMapaRoslina(x,y)) // jest trawa w tabeli
     {
-    poz = mapa[x][y].pm_roslina.pm1_poz;
+    poz = GetPozRoslina(x,y);
     znak[0] = '0' + listaRoslin[poz].oir_poziom;
     if (RoslinaJadalna(x,y))
       {
@@ -476,7 +490,7 @@ void DrukujZnakMapy(short x, short y)
   // zwierzeta
   if (CzyMapaZwierz(x,y)) // jest zwierz w tabeli
     {
-    poz = mapa[x][y].pm_zwierz.pm1_poz;
+    poz = GetPozZwierz(x,y);
     znak[0] = 'A' + listaZwierz[poz].oiz_zapas -1;
     //if (listaZwierz[poz].oiz_zapas < 10)
     //  SetTextColor(FOREGROUND_BLUE);

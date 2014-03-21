@@ -21,8 +21,8 @@ typedef struct
   PUNKT_MAPY1 pm_zwierz;
   } PUNKT_MAPY;
 
-#define X_SIZE 16
-#define Y_SIZE 16
+#define X_SIZE 6
+#define Y_SIZE 6
 
 // W³aœciwoœci WSPÓLNE
 typedef struct
