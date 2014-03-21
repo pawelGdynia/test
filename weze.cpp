@@ -101,6 +101,43 @@ typedef struct
   short z_id; // unikalny numer
   } OBIEKTINFO_ZWIERZ;
 
+
+
+
+//   @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+//!  @name weze_output
+//!  Procedury wyœwietlania na ekranie
+//@{ @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+static HANDLE hStdOut;
+//---------------------------------------------------------------------------
+//! Ustaw kolor tekstu - kolor zdefiniowany w windows.h
+void SetTekstKolor(short kolor)
+{
+  SetConsoleTextAttribute(hStdOut, kolor);
+} // SetTekstKolor
+
+//---------------------------------------------------------------------------
+//! Drukuj tekst wg bie¿¹cego atrybutu
+void PutZnak(char* znak)
+{
+  unsigned long count;
+  WriteConsole(hStdOut, znak, 1, &count, NULL);
+} // PutZnak
+
+//---------------------------------------------------------------------------
+void PrzygotujEkran(void)
+{
+  clrscr();
+  hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
+  SetTekstKolor(FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
+} // PrzygotujEkran
+
+//@} weze_output
+
+
+
+
 //   @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 //!  @name weze_przetwarzanie
 //!  Alogorytmy przetwarzania obiektów i mapy
@@ -1100,25 +1137,10 @@ void PrzetworzMape(void)
 //!  Drukowanie aktualnego stanu mapy
 //@{ @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
-static HANDLE hStdOut;
 
 // wyœwietlanie zajmuje du¿o wiêcej czasu ni¿ generowananie, wiêc mo¿na
 // pokazywaæ co któr¹œ klatkê - wg zmiennej czestoPokaz
 static short czestoPokaz=1; //!< Co któr¹ klatkê pokazywaæ?
-//---------------------------------------------------------------------------
-//! Ustaw kolor tekstu - kolor zdefiniowany w windows.h
-void SetTextColor(short kolor)
-{
-  SetConsoleTextAttribute(hStdOut, kolor);
-} // SetTextColor
-
-//---------------------------------------------------------------------------
-//! Drukuj tekst wg bie¿¹cego atrybutu
-void PutZnak(char* znak)
-{
-  unsigned long count;
-  WriteConsole(hStdOut, znak, 1, &count, NULL);
-} // PutZnak
 
 #define G0 0
 #define D0 1
@@ -1248,7 +1270,7 @@ void DrukujZnakMapy(short x, short y)
   // grunt
   poz = ptrMapa->pm_grunt.pm1_poz;
   znak[0] = ZnakGruntu(ptrMapa, &kolor);
-  SetTextColor(kolor); //FOREGROUND_RED | FOREGROUND_GREEN);
+  SetTekstKolor(kolor); //FOREGROUND_RED | FOREGROUND_GREEN);
 
 
   // roœliny
@@ -1256,7 +1278,7 @@ void DrukujZnakMapy(short x, short y)
     {
     poz = GetPozRoslina(x,y);
     znak[0] = '0' + listaRoslin[poz].r_poziom;
-    SetTextColor(FOREGROUND_RED | FOREGROUND_GREEN /*| FOREGROUND_INTENSITY*/);
+    SetTekstKolor(FOREGROUND_RED | FOREGROUND_GREEN /*| FOREGROUND_INTENSITY*/);
     if (RoslinaJadalna(x,y))
       znak[0] = 'o';
     }
@@ -1271,16 +1293,16 @@ void DrukujZnakMapy(short x, short y)
       if (listaZwierz[poz].z_def == 0)
         {
         if (listaZwierz[poz].z_id == selZwierz)
-          SetTextColor(FOREGROUND_GREEN | FOREGROUND_INTENSITY);
+          SetTekstKolor(FOREGROUND_GREEN | FOREGROUND_INTENSITY);
         else
-          SetTextColor(FOREGROUND_GREEN);
+          SetTekstKolor(FOREGROUND_GREEN);
         }
       else // 2
         {
         if (listaZwierz[poz].z_id == selZwierz)
-          SetTextColor(FOREGROUND_RED | FOREGROUND_INTENSITY);
+          SetTekstKolor(FOREGROUND_RED | FOREGROUND_INTENSITY);
         else
-          SetTextColor(FOREGROUND_RED);
+          SetTekstKolor(FOREGROUND_RED);
         }
       znak[0] = ZnakWeza(x,y);
       }
@@ -1298,9 +1320,9 @@ void PrintWazStats(short poz)
   ptrZ = listaZwierz+poz;
   printf("\n");
   if (ptrZ->z_zapas > 10)
-    SetTextColor(FOREGROUND_GREEN);
+    SetTekstKolor(FOREGROUND_GREEN);
   else
-    SetTextColor(FOREGROUND_RED);
+    SetTekstKolor(FOREGROUND_RED);
   printf("zapas: %2u ", ptrZ->z_zapas);
   ile =ptrZ->z_zapas/10;
   for (a=0; a<ile; a++)
@@ -1308,7 +1330,7 @@ void PrintWazStats(short poz)
   ile = ptrZ->z_zapas - (ile*10); // reszta
   for (a=0; a<ile; a++)
     printf(".");
-  SetTextColor(FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
+  SetTekstKolor(FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
   printf("                \n");
 
   printf("z_def: %u  \n", ptrZ->z_def);
@@ -1360,7 +1382,7 @@ void DrukujMape(void)
     printf("\n"); // koniec linii
     }
   printf("\n");
-  SetTextColor(FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+  SetTekstKolor(FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
   printf("Wcisnij SPACJE, 1,2,3,4,5 q(koniec)\n");
   printf("d(debug +/-) p(pop) n(nast)\n");
   printf("strzalki - kierunek ruchu\n");
@@ -1389,14 +1411,6 @@ void Alokuj(short typ)
     delete[] listaZwierz;
     }
 } // Alokuj
-
-//---------------------------------------------------------------------------
-void PrzygotujEkran(void)
-{
-  clrscr();
-  hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
-  SetTextColor(FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
-} // PrzygotujEkran
 
 /*
 Parametry wywo³ania:
@@ -1453,7 +1467,7 @@ int main(int argc, char* argv[])
       kierunek = getch(); // HMKP
       }
     }
-  SetTextColor(FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
+  SetTekstKolor(FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
   if (znak == '1')
     czestoPokaz = 1;
   if (znak == '2')
