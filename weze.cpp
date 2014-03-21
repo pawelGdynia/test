@@ -112,13 +112,13 @@ typedef struct
 
 // kolory wed³ug: http://stackoverflow.com/questions/17125440/c-win32-console-color
 
-#define KOLOR_DARKBLUE    (FOREGROUND_BLUE)
-#define KOLOR_DARKRED     (FOREGROUND_RED)
-#define KOLOR_RED         (FOREGROUND_RED   | FOREGROUND_INTENSITY)
-#define KOLOR_DARKGREEN   (FOREGROUND_GREEN)
-#define KOLOR_GREEN       (FOREGROUND_GREEN | FOREGROUND_INTENSITY)
-#define KOLOR_DARKGREY    (FOREGROUND_RED   | FOREGROUND_GREEN | FOREGROUND_BLUE)
-#define KOLOR_DARKYELLOW  (FOREGROUND_RED   | FOREGROUND_GREEN)
+#define KOLOR_DARKBLUE   (FOREGROUND_BLUE)
+#define KOLOR_DARKRED    (FOREGROUND_RED)
+#define KOLOR_RED        (FOREGROUND_RED   | FOREGROUND_INTENSITY)
+#define KOLOR_DARKGREEN  (FOREGROUND_GREEN)
+#define KOLOR_GREEN      (FOREGROUND_GREEN | FOREGROUND_INTENSITY)
+#define KOLOR_DARKGREY   (FOREGROUND_RED   | FOREGROUND_GREEN | FOREGROUND_BLUE)
+#define KOLOR_DARKYELLOW (FOREGROUND_RED   | FOREGROUND_GREEN)
 
 static HANDLE hStdOut;
 //---------------------------------------------------------------------------
@@ -133,6 +133,7 @@ void SetTekstKolor(short kolor)
 void PutZnak(char* znak)
 {
   unsigned long count;
+
   WriteConsole(hStdOut, znak, 1, &count, NULL);
 } // PutZnak
 
@@ -1446,7 +1447,6 @@ int main(int argc, char* argv[])
   short ktory;
   char bufor[5];
   unsigned long ile;
-  INPUT_RECORD ir;
 
   if (argc >= 3) // odczytaj rozmiar z command-line
     {
@@ -1475,7 +1475,6 @@ int main(int argc, char* argv[])
    PrzetworzMape();
 
   _pokaz: // tylko wyœwietl inaczej, bez przetwarzania
-//  system("cls");
   if ((ileGen % czestoPokaz)==0)
     {
     DrukujMape();
