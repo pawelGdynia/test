@@ -73,15 +73,19 @@ typedef struct
 //=== ZWIERZÊTA ============================================================
 typedef struct // info wspólne dla wszystkich wyst¹pieñ
   {
-  short dz_maxZapas;  // ile zasobow (trawy) mo¿e przechowaæ
   short dz_roslinozerca;
   short dz_drapieznik;
+  short dz_maxZapas;   // ile zasobow (trawy) mo¿e przechowaæ
   short dz_kalorie;    // ile punktow daje zjedzenie go
-  short defz_maxSize;  // do ilu modu³ów mo¿e rosn¹æ
-
-  //short defz_zapNowyMod;// ile zasobów ¿ywnoœci trzeba na wzrost o 1 modu³
-  //short defz_zasieg;    // zasiêg widocznoœci - do analizy
+  short dz_maxSize;    // do ilu modu³ów mo¿e rosn¹æ
+  short dz_utrata;     // ile zasobów ubywa dla nowego modu³u lub potomka
   } DEF_ZWIERZ;
+
+static DEF_ZWIERZ defZwierz[] = {
+  {1, 0, 10, 10, 10, 5}, // 1,0: roœlino¿erca
+  {0, 1, 20, 10, 10, 5}, // 0,1: drapie¿nik
+  };
+#define ILE_DEFZWIERZ (sizeof(defZwierz)/sizeof(defZwierz[0]))
 
 typedef struct
   {
@@ -95,14 +99,13 @@ typedef struct
   short z_size;
   } OBIEKTINFO_ZWIERZ;
 
-
 //   @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 //!  @name weze_przetwarzanie
 //!  Alogorytmy przetwarzania obiektów i mapy
 //@{ @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
-static short xSize = 10;
-static short ySize = 10;
+static short xSize = 77;
+static short ySize = 21;
 
 static PUNKT_MAPY* mapa;
 static DEF_GRUNT defGrunt[] = {
@@ -116,12 +119,6 @@ static DEF_ROSLINA defRoslina[] = {
   {9, 2},
   };
 #define ILE_DEFROSLINA (sizeof(defRoslina)/sizeof(defRoslina[0]))
-
-static DEF_ZWIERZ defZwierz[] = {
-  {10, 1, 0, 3, 10}, // 0: roœlino¿erca
-  {10, 1, 1, 3, 10}, // 1: drapie¿nik
-  };
-#define ILE_DEFZWIERZ (sizeof(defZwierz)/sizeof(defZwierz[0]))
 
 /* funkcje do zrobienia:
 - wype³nij mapê danymi z pliku txt
@@ -276,8 +273,8 @@ short losowe[24][4] = { // wszystkie mo¿liwe kolejnoœci dla 4 elementów
 void UstalRandom4(short* num4)
 {
   short a;
-//  a = random(24); // wybierz - która kolejnoœæ z 24 zostanie u¿yta
-  a = 11;
+  a = random(24); // wybierz - która kolejnoœæ z 24 zostanie u¿yta
+//  a = 11;
   num4[0] = losowe[a][0];
   num4[1] = losowe[a][1];
   num4[2] = losowe[a][2];
@@ -364,7 +361,7 @@ short RoslinaJadalna(short x, short y)
 
   poz = GetPozRoslina(x,y); // która roœlina z listy
   ptrRoslina = listaRoslin+poz;
-  ptrDef    = defRoslina + ptrRoslina->r_def;
+  ptrDef     = defRoslina + ptrRoslina->r_def;
 
   //-----------
   if (ptrRoslina->r_poziom == ptrDef->dr_czasWzrostu)
@@ -410,27 +407,27 @@ short WybierzFood(short x1, short y1, short* destX, short* destY, DEF_ZWIERZ* de
       }
     if (CzyPunktZakres(*destX, *destY)) // punkt nie wyszed³ poza mapê
       {
-      if (def->dz_drapieznik)
+      if (def->dz_drapieznik) // jestem drapie¿nikiem
         {
-        if (CzyMapaZwierz(*destX, *destY)==1) // znalaz³ roœlino¿ercê
+        if (CzyMapaZwierz(*destX, *destY)==1) // roœlino¿erca (1) w punkcie docelowym
           return 2; // zjedz go!
         }
-      // else // drapie¿nik nie jada roœlin
-        {
-        if (def->dz_roslinozerca
-          &&CzyMapaZwierz(*destX, *destY)==0)
+
+      if (def->dz_roslinozerca) // jestem roœlino¿erc¹
+        if (CzyMapaZwierz(*destX, *destY)==0) // nie ma tam zwierza
           {
-          //lastX = *destX;
-          //lastY = *destY;
           if (RoslinaJadalna(*destX, *destY))
             return 1; // wybierz ten punkt
           }
+      if (CzyMapaZwierz(*destX, *destY)==0) // nie ma tam ¿adnego zwierza
+        {
+        // pamiêtaj jako ostatnio sprawdzany dobry punkt 
+        lastX = *destX;
+        lastY = *destY;
         }
-      lastX = *destX;
-      lastY = *destY;
       }
     }
-  // SprawdŸ czy w punkcie bie¿¹cym jest roœlina
+  // Nie by³o decyzji wczeœniej, sprawdŸ czy w punkcie bie¿¹cym jest roœlina
   if (def->dz_roslinozerca
     &&RoslinaJadalna(x1, y1))
     {
@@ -509,18 +506,6 @@ void PrzesunZwierz(short poz, short srcX, short srcY, short dstX, short dstY, sh
   OBIEKTINFO_ZWIERZ* ptrZ;
 
   ptrZ = listaZwierz+poz;
-//  ptrSrc = PtrPunktMapy(srcX, srcY);
-//  ptrMapa= PtrPunktMapy(dstX, dstY);
-
-  //====== MAPA: przesuwanie info o g³owie =====================
-  // przepisz dane ze starego miejsca do nowego
-//  ptrDst->pm_zwierz.pm1_tab = ptrSrc->pm_zwierz.pm1_tab;
-//  ptrDst->pm_zwierz.pm1_poz = ptrSrc->pm_zwierz.pm1_poz;
-
-  // wyma¿ w starym miejscu na mapie
-//  ptrSrc->pm_zwierz.pm1_tab = 0;
-//  ptrSrc->pm_zwierz.pm1_poz = 0;
-
   // w tabeli zwierz zmieñ wspó³rzêdn¹ g³owy na mapie
   ptrZ->z_common.x = dstX;
   ptrZ->z_common.y = dstY;
@@ -608,13 +593,13 @@ void ProcessZwierz(short poz)
   mapSrcX = ptrZ1->z_common.x;
   mapSrcY = ptrZ1->z_common.y;
 
-  //=== Ustal miejsce do którego ma siê przemieœciæ (oraz czy coœ zje)
+  //=== 1.Ustal miejsce do którego ma siê przemieœciæ (oraz czy coœ zje)
   zjedz  = WybierzFood(mapSrcX, mapSrcY, &mapDestX, &mapDestY, defZ1); // zwraca 1 lub 2
 
   //=== najpierw zjedz obiekt w punkcie docelowym, potem tam siê przemieœæ
   if (zjedz)
     {
-    if (zjedz==2) // zjedz roœlino¿ercê
+    if (zjedz == 2) // zjedz roœlino¿ercê
       {
       poz2 = GetPozZwierz(mapDestX, mapDestY);
       ptrZ2 = listaZwierz+poz2;
@@ -623,8 +608,7 @@ void ProcessZwierz(short poz)
         // tylko gdy nie jest pe³ny
         defZ2 = defZwierz + ptrZ2->z_def;
         ptrZ1->z_zapas += defZ2->dz_kalorie;
-        ptrZ2->z_zapas = 0; // wyzeruj zjedzonego
-        ptrZ2->z_def= -1;
+        UsunMartwego(poz2);
         }
       }
     else if (RoslinaJadalna(mapDestX, mapDestY))
@@ -646,24 +630,17 @@ void ProcessZwierz(short poz)
   if (mapDestX != mapSrcX
     ||mapDestY != mapSrcY) // tylko gdy zmienia miejsce
     {
-    if (listaZwierz[poz].z_zapas > 8
-      &&listaZwierz[poz].z_size < MAX_SIZE)
+    if (ptrZ1->z_zapas >= defZ1->dz_maxZapas-1
+      &&ptrZ1->z_size  <  defZ1->dz_maxSize)
       {
-      listaZwierz[poz].z_zapas -= 5;
+      ptrZ1->z_zapas -= defZ1->dz_utrata;
       PrzesunZwierz(poz, mapSrcX, mapSrcY, mapDestX, mapDestY, 1); // 1=uroœnij
       }
     else // tylko przesuñ
       PrzesunZwierz(poz, mapSrcX, mapSrcY, mapDestX, mapDestY, 0);
     }
 
-  //=== zmniejsz zapas
-  if (listaZwierz[poz].z_zapas > 0)
-    listaZwierz[poz].z_zapas--;
-
-  if (listaZwierz[poz].z_zapas <= 0)
-    UsunMartwego(poz);
-
-  // rozmna¿anie
+  // 2. ewentualne rozmna¿anie
   if (ptrZ1->z_zapas >= defZ1->dz_maxZapas) // s¹ nadwy¿ki do wydania
     {
     short ok;
@@ -672,10 +649,16 @@ void ProcessZwierz(short poz)
     ok = WybierzDlaNowego(mapDestX, mapDestY, &mapNewX, &mapNewY);
     if (ok)
       {
-      ptrZ1->z_zapas -= 5; // zmniejsz poziom zapasu matce
+      ptrZ1->z_zapas -= defZ1->dz_utrata; // zmniejsz poziom zapasu matce
       DodajZwierz(mapNewX, mapNewY, ptrZ1->z_def);
       }
     }
+  //=== 3.na koniec - zmniejsz zapas
+  if (ptrZ1->z_zapas > 0)
+    ptrZ1->z_zapas--;
+
+  if (ptrZ1->z_zapas <= 0)
+    UsunMartwego(poz);
 } // ProcessZwierz
 
 
@@ -694,7 +677,7 @@ void UsunMartwe(void)
         memmove(listaZwierz+poz, listaZwierz+poz+1, sizeof(listaZwierz[0])*(ileZwierz-poz-1));
 
         // przenumeruj obiekty na mapie (o -1)
-        short a;         
+        short a;
         for (a=0; a<ileZwierz-poz-1; a++)
           {
           short seg;
@@ -715,7 +698,7 @@ void UsunMartwe(void)
 } // UsunMartwe
 
 //---------------------------------------------------------------------------
-void TestMapy(void)
+/*void TestMapy(void)
 {
   short x,y;
   PUNKT_MAPY* ptrMapa=NULL;
@@ -726,7 +709,7 @@ void TestMapy(void)
       ptrMapa = PtrPunktMapy(x, y);
       }
 } // TestMapy
-
+*/
 //---------------------------------------------------------------------------
 //! Przetwarzanie obiektow o 1 jednostkê czasu
 void PrzetworzMape(void)
@@ -824,7 +807,7 @@ char ZnakSegmentu(short* tab)
     return 186;
   if (tab[L0] || tab[P0])
     return 205;
-  return '*';  
+  return '*';
 } // ZnakSegmentu
 
 //---------------------------------------------------------------------------
@@ -847,8 +830,8 @@ char ZnakWeza(short x, short y)
       if (a == 0) // g³owa
         {
         // g³owa ma literkê
-        //znak = 'A' + ptrZ->z_zapas -1;
-        znak = '8';
+        znak = 'A' + ptrZ->z_zapas -1;
+        //znak = '8';
         return znak;
         }
 /*      if (a == ptrZ->z_size-1)
