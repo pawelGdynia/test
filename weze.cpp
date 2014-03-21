@@ -18,7 +18,7 @@
 //!  Alogorytmy przetwarzania obiektów i mapy
 //@{ @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
-static PUNKT_MAPY mapa[X_SIZE][Y_SIZE];
+static PUNKT_MAPY mapa[X_SIZE*Y_SIZE];
 
 static DEF_GRUNT defGrunt[] = {
   {0,0}, // 0, ziemia rolna
@@ -54,7 +54,7 @@ static short ileZwierz=0;
 //! Zwraca adres punktu na mapie, niezale¿nie od wewnêtrznej organizacji
 PUNKT_MAPY* PtrPunktMapy(short x, short y)
 {
-  return &(mapa[x][y]);
+  return &(mapa[(x*X_SIZE)+y]);
 } // PtrPunktMapy
 
 //---------------------------------------------------------------------------
@@ -417,7 +417,7 @@ void PrzetworzMape(void)
             {
             listaRoslin[poz2].oir_poziom = 0;
             if (listaZwierz[poz].oiz_zapas < 20)
-              listaZwierz[poz].oiz_zapas += 3;
+              listaZwierz[poz].oiz_zapas += 2;
             }
           }
         }
