@@ -2,16 +2,14 @@
 //  Zlote wê¿e: struktury danych
 // -----------------------------
 
-// w których tabelach jest przechowywany opis obiektu
-#define TAB_GRUNT   1
-#define TAB_ROSLINA 2
-#define TAB_ZWIERZ  3
+#define TYPOB_GRUNT   1
+#define TYPOB_ROSLINA 2
+#define TYPOB_ZWIERZ  3
 
-#define MAX_SIZE 15
 typedef struct
   {
-  short pm1_tab; // TAB_*: w której tabeli obiektów znajduje siê opis
-  short pm1_poz; // pozycja w tabeli dla wskazanego typu
+  short pm1_typ; // TYPOB_*: w której tabeli obiektów znajduje siê opis
+  short pm1_poz; // pozycja w tabeli dla wskazanego typu 
   } PUNKT_MAPY1;
 
 // dane 1 punktu na mapie
@@ -22,68 +20,69 @@ typedef struct
   PUNKT_MAPY1 pm_zwierz;
   } PUNKT_MAPY;
 
+#define X_SIZE 12
+#define Y_SIZE 6
+
 // W³aœciwoœci WSPÓLNE
 typedef struct
   {
-  short x;  // wspó³rzêdna x na mapie (g³owa dla zwierza)
-  short y;  // wspó³rzêdna y na mapie
-  short po; // czy po przetworzeniu
+  short oic_x;  // wspó³rzêdna x
+  short oic_y;  // wspó³rzêdna y
+  short oic_po; // czy po przetworzeniu
   } OBIEKTINFO_COMMON;
 
-//=== GRUNTY ===============================================================
+//=== GRUNTY
 typedef struct // info wspólne dla wszystkich wyst¹pieñ
   {
-  short dg_blok; // miejsce niedostêpne - ani roœlin ani zwierz¹t
-  short dg_dead; // miejsce martwe - bez roœlin, ale dostêpne dla zwierz¹t
+  short defg_id;   // identyfikator
+
+  short defg_blok; // miejsce niedostêpne - ani roœlin ani zwierz¹t
+  short defg_dead; // miejsce martwe - bez roœlin, ale dostêpne dla zwierz¹t
   } DEF_GRUNT;
 
 typedef struct // info dla jednego punktu
   {
-  short g_def;              // która definicja w³aœciwoœci
-  OBIEKTINFO_COMMON g_common; // informacje bazowe, systemowe
+  short oig_defid;              // która definicja w³aœciwoœci
+  OBIEKTINFO_COMMON oig_common; // informacje bazowe, systemowe
 
   // dane indywidualne obiektu: brak
   } OBIEKTINFO_GRUNT;
 
-//== ROŒLINY ===============================================================
+//== ROŒLINY
 typedef struct // info wspólne dla wszystkich wyst¹pieñ
   {
-  short dr_czasWzrostu; // max poziom, ile okresów na pe³ny wzrost od zera
-  short dr_kalorie;     // ile punktów zyskuje zjadaj¹cy
+  short defr_id;   // identyfikator
+
+  short defr_czasWzrostu; // max poziom, ile okresów na pe³ny wzrost od zera
   } DEF_ROSLINA;
 
 typedef struct
   {
-  short r_def; // która definicja w³aœciwoœci
-  OBIEKTINFO_COMMON r_common; // informacje bazowe, systemowe
+  short oir_defid; // która definicja w³aœciwoœci
+  OBIEKTINFO_COMMON oir_common; // informacje bazowe, systemowe
 
   // dane indywidualne obiektu
-  short r_poziom; // bie¿acy poziom wzrostu - max to defr_czasWzrostu
+  short oir_poziom; // bie¿acy poziom wzrostu - max to defr_czasWzrostu
   } OBIEKTINFO_ROSLINA;
 
-//=== ZWIERZÊTA ============================================================
+//=== ZWIERZÊTA
 typedef struct // info wspólne dla wszystkich wyst¹pieñ
   {
-  short dz_maxZapas;  // ile zasobow (trawy) mo¿e przechowaæ
-  short dz_roslinozerca;
-  short dz_drapieznik;
-  short dz_kalorie;    // ile punktow daje zjedzenie go
-  short defz_maxSize;  // do ilu modu³ów mo¿e rosn¹æ
+  short defz_id;   // identyfikator
 
-  //short defz_zapNowyMod;// ile zasobów ¿ywnoœci trzeba na wzrost o 1 modu³
-  //short defz_zasieg;    // zasiêg widocznoœci - do analizy
+  short defz_maxModul;  // do ilu modu³ów mo¿e rosn¹æ
+  short defz_maxZapas;  // ile zasobow (trawy) mo¿e przechowaæ
+  short defz_zapNowyMod;// ile zasobów ¿ywnoœci trzeba na wzrost o 1 modu³
+  short defz_zasieg;    // zasiêg widocznoœci - do analizy
   } DEF_ZWIERZ;
 
 typedef struct
   {
-  short z_def; // która definicja w³aœciwoœci
-  OBIEKTINFO_COMMON z_common; // informacje bazowe, systemowe
+  short oiz_defid; // która definicja w³aœciwoœci
+  OBIEKTINFO_COMMON oiz_common; // informacje bazowe, systemowe
 
   // dane indywidualne obiektu
-  short z_zapas;  // bie¿acy poziom zapasu ¿ywnoœci
-  short z_x[MAX_SIZE+1];// wspó³rzêdne wszystkich segmentów
-  short z_y[MAX_SIZE+1];
-  short z_size;
+  short oiz_zapas; // bie¿acy poziom zapasu ¿ywnoœci
   } OBIEKTINFO_ZWIERZ;
 
 
