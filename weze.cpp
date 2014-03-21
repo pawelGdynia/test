@@ -422,7 +422,10 @@ void DrukujZnakMapy(short x, short y)
     {
     znak[0] = '0' + listaRoslin[poz].oir_poziom;
     if (RoslinaJadalna(listaRoslin[poz].oir_poziom))
-      SetTextColor(FOREGROUND_GREEN | FOREGROUND_INTENSITY);
+      {
+      SetTextColor(FOREGROUND_RED | FOREGROUND_GREEN /*| FOREGROUND_INTENSITY*/);
+      znak[0] = 'o';
+      }
     else
       SetTextColor(FOREGROUND_GREEN);
     }
@@ -447,7 +450,7 @@ void DrukujMape(void)
 
   COORD coord = {0,0};
   SetConsoleCursorPosition(hStdOut, coord);
-  printf("MAPA: %u\n", ileGen);
+  printf("MAPA %ux%u: %u\n", X_SIZE, Y_SIZE, ileGen);
   printf("weze: %u\n", ileZwierz);
   printf("dead: %u\n", martwe);  
   for (y=0; y<Y_SIZE; y++)
