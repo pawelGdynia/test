@@ -1294,10 +1294,11 @@ void PrintWazStats(short poz)
 {
   OBIEKTINFO_ZWIERZ* ptrZ;
   short a, ile, reszta;
+
   ptrZ = listaZwierz+poz;
   printf("\n");
   if (ptrZ->z_zapas > 10)
-    SetTextColor(FOREGROUND_GREEN);  
+    SetTextColor(FOREGROUND_GREEN);
   else
     SetTextColor(FOREGROUND_RED);
   printf("zapas: %2u ", ptrZ->z_zapas);
@@ -1307,7 +1308,7 @@ void PrintWazStats(short poz)
   ile = ptrZ->z_zapas - (ile*10); // reszta
   for (a=0; a<ile; a++)
     printf(".");
-  SetTextColor(FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);    
+  SetTextColor(FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
   printf("                \n");
 
   printf("z_def: %u  \n", ptrZ->z_def);
@@ -1368,13 +1369,41 @@ void DrukujMape(void)
     PrintWazStats(poz);
 } // DrukujMape
 
+//---------------------------------------------------------------------------
+//! Alokacja pamiêci
+void Alokuj(short typ)
+{
+  if (typ==1)
+    {
+    mapa = new PUNKT_MAPY[xSize * ySize];
+    memset(mapa, 0, sizeof(PUNKT_MAPY)*xSize*ySize);
+    listaGrunt  = new OBIEKTINFO_GRUNT[xSize * ySize +1];
+    listaRoslin = new OBIEKTINFO_ROSLINA[xSize * ySize +1];
+    listaZwierz = new OBIEKTINFO_ZWIERZ[xSize * ySize +1];
+    }
+  else
+    {
+    delete[] mapa;
+    delete[] listaGrunt;
+    delete[] listaRoslin;
+    delete[] listaZwierz;
+    }
+} // Alokuj
+
+//---------------------------------------------------------------------------
+void PrzygotujEkran(void)
+{
+  clrscr();
+  hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
+  SetTextColor(FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
+} // PrzygotujEkran
+
 /*
 Parametry wywo³ania:
 1) xSize
 2) ySize
 3) czestoPokaz
 */
-
 //---------------------------------------------------------------------------
 //! G³ówne wejœcie do programu
 int main(int argc, char* argv[])
@@ -1386,8 +1415,7 @@ int main(int argc, char* argv[])
   unsigned long ile;
   INPUT_RECORD ir;
 
-  SetConsoleTitle(argv[0]);
-  if (argc >= 3)
+  if (argc >= 3) // odczytaj rozmiar z command-line
     {
     a = atoi(argv[1]);
     if (a>3)
@@ -1396,21 +1424,15 @@ int main(int argc, char* argv[])
     if (a >3)
       ySize = a;
     }
-  if (argc==4)
+
+  if (argc==4) // odczytaj czestotliwoœæ z command-line
     {
     a = atoi(argv[3]);
     if (a>1)
       czestoPokaz = a;
     }
-  mapa = new PUNKT_MAPY[xSize * ySize];
-  memset(mapa, 0, sizeof(PUNKT_MAPY)*xSize*ySize);
-  listaGrunt  = new OBIEKTINFO_GRUNT[xSize * ySize +1];
-  listaRoslin = new OBIEKTINFO_ROSLINA[xSize * ySize +1];
-  listaZwierz = new OBIEKTINFO_ZWIERZ[xSize * ySize +1];
-
-  clrscr();
-  hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
-  SetTextColor(FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
+  Alokuj(1);
+  PrzygotujEkran();
   ileGen = 0;
   PusteTabele();
   ZapelnijMape();
@@ -1482,10 +1504,7 @@ int main(int argc, char* argv[])
 
   if (znak == 'q')
     {
-    delete[] mapa;
-    delete[] listaGrunt;
-    delete[] listaRoslin;
-    delete[] listaZwierz;
+    Alokuj(2);
     return 0;
     }
   goto _next;
