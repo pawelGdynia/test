@@ -169,7 +169,7 @@ void ZapelnijMape(void)
       if (x==y)
         DodajZwierz(x, y, 0); // gatunek "0"
       }
-// DodajZwierz(5, 1, 1); // gatunek "1"
+ DodajZwierz(5, 1, 1); // gatunek "1"
 } // ZapelnijMape
 
 short losowe[24][4] = { // wszystkie mo¿liwe kolejnoœci dla 4 elementów
@@ -313,18 +313,21 @@ short WybierzFood(short x1, short y1, short* destX, short* destY, DEF_ZWIERZ* de
       }
     if (CzyPunktZakres(*destX, *destY)) // punkt nie wyszed³ poza mapê
       {
-
-      if (def->dz_drapieznik
-       && CzyMapaZwierz(*destX, *destY)==1) // znalaz³ roœlino¿ercê
-        return 2; // zjedz go!
-
-      if (def->dz_roslinozerca
-        &&CzyMapaZwierz(*destX, *destY)==0)
+      if (def->dz_drapieznik)
         {
-        lastX = *destX;
-        lastY = *destY;
-        if (RoslinaJadalna(*destX, *destY))
-          return 1; // wybierz ten punkt
+        if (CzyMapaZwierz(*destX, *destY)==1) // znalaz³ roœlino¿ercê
+          return 2; // zjedz go!
+        }
+      else // drapie¿nik nie jada roœlin
+        {
+        if (def->dz_roslinozerca
+          &&CzyMapaZwierz(*destX, *destY)==0)
+          {
+          lastX = *destX;
+          lastY = *destY;
+          if (RoslinaJadalna(*destX, *destY))
+            return 1; // wybierz ten punkt
+          }
         }
       }
     }
@@ -630,12 +633,22 @@ void DrukujZnakMapy(short x, short y)
 void DrukujMape(void)
 {
   short x, y;
-
+  short a, wazA, wazB;
+  wazA = 0;
+  wazB = 0;
+  for (a=0; a<ileZwierz;a++)
+    {
+    OBIEKTINFO_ZWIERZ* ptrZ1 = listaZwierz+a;
+    if (ptrZ1->z_defpoz == 0)
+      wazA++;
+    else
+      wazB++;
+    }
   COORD coord = {0,0};
   SetConsoleCursorPosition(hStdOut, coord);
   printf("MAPA %ux%u: %lu (+%u)      \n", xSize, ySize, ileGen, czestoPokaz);
-  printf("weze: %u\n", ileZwierz);
-  printf("dead: %lu\n", martwe);
+  printf("weze: %u %u   \n", wazA, wazB);
+  printf("dead: %lu   \n", martwe);
   for (y=0; y<ySize; y++)
     {
     for (x=0; x<xSize; x++)
@@ -643,7 +656,7 @@ void DrukujMape(void)
     printf("\n"); // koniec linii
     }
   printf("\n");
-  SetTextColor(FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);  
+  SetTextColor(FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
   printf("Wcisnij SPACJE, 1,2,3,4,5 q(koniec)");
   printf("\n");  
 } // DrukujMape
