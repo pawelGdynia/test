@@ -69,8 +69,6 @@ void PusteTabele(void)
   memset(listaGrunt,  0, sizeof(listaGrunt));
   memset(listaRoslin, 0, sizeof(listaRoslin));
   memset(listaZwierz, 0, sizeof(listaZwierz));
-
-  memset(mapa, 0, sizeof(mapa));
   martwe = 0;
 } // PusteTabele
 
@@ -153,7 +151,7 @@ void ZapelnijMape(void)
       DodajGrunt(x, y, 0);
 
       // roœliny
-      //if (x%2 && y%2) // tylko kilka rz¹dków roœliny zwyk³ej (typ 0)
+      if (y%2) // tylko kilka rz¹dków roœliny zwyk³ej (typ 0)
         DodajRosline(x, y, 0);
       }
   DodajZwierz(1, 1, 0);
@@ -362,6 +360,14 @@ short WybierzDlaNowego(short x1, short y1, short* destX, short* destY)
 } // WybierzDlaNowego
 
 //---------------------------------------------------------------------------
+// Przetwórz roœlinê z listy
+void ProcessRoslina(short poz)
+{
+  if (listaRoslin[poz].oir_poziom < 9)
+    listaRoslin[poz].oir_poziom++; // wzrost +1
+} // ProcessRoslina
+
+//---------------------------------------------------------------------------
 //! Przetwarzanie obiektow o 1 jednostkê czasu
 void PrzetworzMape(void)
 {
@@ -378,10 +384,7 @@ void PrzetworzMape(void)
   // nie tracimy czasu na puste komórki
 
   for (poz=0; poz<ileRoslin; poz++)
-    {
-    if (listaRoslin[poz].oir_poziom < 9)
-      listaRoslin[poz].oir_poziom++; // wzrost +1
-    }
+    ProcessRoslina(poz);
 
   // zwierzêta
   for (poz=0; poz<ileZwierz; poz++)
@@ -558,7 +561,7 @@ void DrukujMape(void)
 
   COORD coord = {0,0};
   SetConsoleCursorPosition(hStdOut, coord);
-  printf("MAPA %ux%u: %lu\n", xSize, ySize, ileGen);
+  printf("MAPA %ux%u: %lu (+%u)      \n", xSize, ySize, ileGen, czestoPokaz);
   printf("weze: %u\n", ileZwierz);
   printf("dead: %lu\n", martwe);
   for (y=0; y<ySize; y++)
@@ -571,7 +574,7 @@ void DrukujMape(void)
 } // DrukujMape
 
 /*
-Parametry:
+Parametry wywo³ania:
 1) xSize
 2) ySize
 3) czestoPokaz
@@ -598,6 +601,7 @@ int main(int argc, char* argv[])
       czestoPokaz = a;
     }
   mapa = new PUNKT_MAPY[xSize * ySize];
+  memset(mapa, 0, sizeof(short)*xSize*ySize);  
   listaGrunt  = new OBIEKTINFO_GRUNT[xSize * ySize +1];
   listaRoslin = new OBIEKTINFO_ROSLINA[xSize * ySize +1];
   listaZwierz = new OBIEKTINFO_ZWIERZ[xSize * ySize +1];
@@ -624,7 +628,8 @@ int main(int argc, char* argv[])
     czestoPokaz = 100;
   if (znak == '4')
     czestoPokaz = 1000;
-
+  if (znak == '5')
+    czestoPokaz = 10000;
 
   if (znak == 'q')
     {
