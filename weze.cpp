@@ -44,6 +44,7 @@ static DEF_ZWIERZ defZwierz[] = {
 */
 
 static short ileGen=0; // ile przebiegów
+static short martwe=0; // ile odesz³o
 static OBIEKTINFO_GRUNT   listaGrunt [X_SIZE*Y_SIZE+1];
 static OBIEKTINFO_ROSLINA listaRoslin[X_SIZE*Y_SIZE+1];
 static OBIEKTINFO_ZWIERZ  listaZwierz[X_SIZE*Y_SIZE+1];
@@ -62,6 +63,7 @@ void PusteTabele(void)
   memset(listaZwierz, 0, sizeof(listaZwierz));
 
   memset(mapa, 0, sizeof(mapa));
+  martwe = 0;
 } // PusteTabele
 
 //---------------------------------------------------------------------------
@@ -132,7 +134,7 @@ void ZapelnijMape(void)
       DodajGrunt(x, y, 1);
 
       // roœliny
-      if (y<7) // tylko kilka rz¹dków
+      //if (y<7) // tylko kilka rz¹dków
         DodajRosline(x, y, 1);
       }
   DodajZwierz(1, 1, 1);
@@ -234,12 +236,51 @@ short WybierzFood(short x1, short y1, short* destX, short* destY)
       if (RoslinaJadalna(stan))
         return 1; // wybierz ten punkt
     }
-    
+
   // zostañ tam gdzie jesteœ
   *destX = x1;
   *destY = y1;
   return 0; // nie ma nic jadalnego w okolicy
 } // WybierzFood
+//---------------------------------------------------------------------------
+//! Wybierz z s¹siedztwa miejsce do umieszczenia noworodka (wynik=1 to zgoda)
+short WybierzDlaNowego(short x1, short y1, short* destX, short* destY)
+{
+  short kolej[4];
+  short a;
+
+  UstalRandom4(kolej);
+  // w losowej kolejnoœci - punkty s¹siednie
+  for (a=0; a<4; a++)
+    {
+    switch (kolej[a])
+      {
+      case 1: // na górze
+        *destX = x1;
+        *destY = y1-1;
+        break;
+
+      case 2: // z prawej
+        *destX = x1+1;
+        *destY = y1;
+        break;
+
+      case 3: // na dole
+        *destX = x1;
+        *destY = y1+1;
+        break;
+
+      case 4: // z lewej
+        *destX = x1-1;
+        *destY = y1;
+        break;
+      }
+    if (mapa[*destX][*destY].pm_zwierz.pm1_typ == 0) // miejsce jest wolne
+      return 1; // wybierz ten punkt
+    }
+
+  return 0; // nie mam miejsca
+} // WybierzDlaNowego
 
 //---------------------------------------------------------------------------
 //! Przetwarzanie obiektow o 1 jednostkê czasu
@@ -309,6 +350,19 @@ void PrzetworzMape(void)
         // 2.oznakuj w tabeli jako martwy
         listaZwierz[poz].oiz_defid = 0;
         }
+      // rozmna¿anie
+      if (listaZwierz[poz].oiz_zapas >=20) // s¹ nadwy¿ki do wydania
+        {
+        short ok;
+        short destX2, destY2;
+        
+        ok = WybierzDlaNowego(destX, destY, &destX2, &destY2);
+        if (ok)
+          {
+          listaZwierz[poz].oiz_zapas -= 10; // zmniejsz poziom zapasu matce
+          DodajZwierz(destX2, destY2, 1);
+          }
+        }
       }
 
   // usuñ martwe z listy
@@ -318,6 +372,7 @@ void PrzetworzMape(void)
       if (ileZwierz != poz) // to nie jest ostatni
         memmove(listaZwierz+poz, listaZwierz+poz+1, sizeof(listaZwierz[0])*(ileZwierz-poz));
       ileZwierz--;
+      martwe++;
       }
 } // PrzetworzMape
 
@@ -392,7 +447,9 @@ void DrukujMape(void)
 
   COORD coord = {0,0};
   SetConsoleCursorPosition(hStdOut, coord);
-  printf("====== MAPA nr: %u ===\n", ileGen);
+  printf("MAPA: %u\n", ileGen);
+  printf("weze: %u\n", ileZwierz);
+  printf("dead: %u\n", martwe);  
   for (y=0; y<Y_SIZE; y++)
     {
     for (x=0; x<X_SIZE; x++)
@@ -408,18 +465,18 @@ void DrukujMape(void)
 int main(int argc, char* argv[])
 {
   short a, znak = ' ';
-  short cykl=0;
+
   clrscr();
   hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
   SetTextColor(FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
   ileGen = 0;
   PusteTabele();
   ZapelnijMape();
+
   _next:
-  cykl++;
   PrzetworzMape();
   DrukujMape();
-  if (cykl > 7000)
+//  if (ileGen > 7000)
     znak = getch(); // praca krokowa
   SetTextColor(FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
   if (znak == 'q')
