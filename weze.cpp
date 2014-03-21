@@ -351,7 +351,7 @@ void ZapelnijMapeFull(void)
   for (x=0; x<xSize; x++)
     for (y=0; y<ySize; y++)
       {
-      ptrMapa = PtrPunktMapy(x,y);
+      //ptrMapa = PtrPunktMapy(x,y);
 
       // roœliny
       //if (y%2) // tylko kilka rz¹dków roœliny zwyk³ej (typ 0)
@@ -801,7 +801,7 @@ void ProcessRoslina(short poz)
 void PrzesunZwierz(short poz, short srcX, short srcY, short dstX, short dstY, short plus)
 {
   short a;
-  PUNKT_MAPY* ptrMapa=NULL;
+  PUNKT_MAPY* ptrMapa;
   OBIEKTINFO_ZWIERZ* ptrZ;
 
   ptrZ = listaZwierz+poz;
@@ -853,7 +853,7 @@ void UsunMartwego(short poz)
 {
   short a;
   OBIEKTINFO_ZWIERZ* ptrZ; // zwierz przetwarzany
-  PUNKT_MAPY* ptrDst=NULL;
+  PUNKT_MAPY* ptrDst;
 
   ptrZ = listaZwierz+poz;
   // 1.usuñ dane z mapy
@@ -873,7 +873,7 @@ void UsunMartwego(short poz)
 void TestMapy(void)
 {
   short a, max, x,y;
-  PUNKT_MAPY* ptrMapa=NULL;
+  PUNKT_MAPY* ptrMapa;
 
   max = ileZwierz; // ustal iloœæ przed - nowo dodane nie bêd¹ uwzglêdnione
   for (a=0; a<max; a++)
@@ -900,7 +900,7 @@ short WybierzManual(short poz, short x1, short y1, short* destX, short* destY, D
 {
   short typ = WybranyKierunek(); // ustal 1234
   OBIEKTINFO_ZWIERZ* ptrZ1; // zwierz przetwarzany
-  PUNKT_MAPY* ptrMapa=NULL;
+  PUNKT_MAPY* ptrMapa;
 
   ptrZ1 = listaZwierz+poz;
   *destX = x1;
@@ -962,7 +962,7 @@ void ProcessZwierz(short poz, short manual)
 {
   short mapSrcX, mapSrcY;
   short mapDestX, mapDestY;
-  short zjedz=0;
+  short zjedz;
   short poz2;
 
   OBIEKTINFO_ZWIERZ* ptrZ1; // zwierz przetwarzany
@@ -1084,7 +1084,6 @@ short WybranyKierunek(void)
 void UsunMartwe(void)
 {
   short x,y, poz;
-  PUNKT_MAPY* ptrSrc=NULL;
 
   for (poz=ileZwierz-1; poz>=0; poz--)
     if (listaZwierz[poz].z_def == -1) // do usuniêcia
@@ -1100,6 +1099,7 @@ void UsunMartwe(void)
           short seg;
           for (seg=0; seg<listaZwierz[poz+a].z_size; seg++)
             {
+            PUNKT_MAPY* ptrSrc;            
             x = listaZwierz[poz+a].z_x[seg];
             y = listaZwierz[poz+a].z_y[seg];
             ptrSrc = PtrPunktMapy(x, y);
@@ -1288,10 +1288,9 @@ void DrukujZnakMapy(short x, short y)
   ptrMapa = PtrPunktMapy(x,y);
 
   // grunt
-  poz = ptrMapa->pm_grunt.pm1_poz;
+  //poz = ptrMapa->pm_grunt.pm1_poz;
   znak[0] = ZnakGruntu(ptrMapa, &kolor);
-  SetTekstKolor(kolor); 
-
+  SetTekstKolor(kolor);
 
   // roœliny
   if (CzyMapaRoslina(x,y)) // jest trawa w tabeli
@@ -1371,10 +1370,10 @@ void DrukujMape(void)
 {
   short x, y;
   short a, wazA, wazB;
-  short poz=0;
+  short pozZwierz = 0;
 
   if (selZwierz != -1)
-    poz = Id2PozZwierz(selZwierz);
+    pozZwierz = Id2PozZwierz(selZwierz);
   wazA = 0;
   wazB = 0;
   for (a=0; a<ileZwierz;a++)
@@ -1389,8 +1388,8 @@ void DrukujMape(void)
   printf("MAPA %ux%u: %lu (+%u)      \n", xSize, ySize, ileGen, czestoPokaz);
   printf("weze: %u %u   \n", wazA, wazB);
   printf("dead: %lu   \n", martwe);
-  if (poz >= 0)
-    printf("wybrany: poz=%u id=%u     ", poz, (unsigned)listaZwierz[poz].z_id);
+  if (pozZwierz >= 0)
+    printf("wybrany: poz=%u id=%u     ", pozZwierz, (unsigned)listaZwierz[pozZwierz].z_id);
   else
     printf("nie wybrano                          ");
   printf("\n");
@@ -1407,7 +1406,7 @@ void DrukujMape(void)
   printf("strzalki - kierunek ruchu\n");
   printf("\n");
   if (selZwierz != -1)
-    PrintWazStats(poz);
+    PrintWazStats(pozZwierz);
 } // DrukujMape
 
 //---------------------------------------------------------------------------
@@ -1465,10 +1464,10 @@ void CzytajCmdLine(int argc, char* argv[])
 //! G³ówne wejœcie do programu
 int main(int argc, char* argv[])
 {
-  short znak = ' ';
-  char extended;
+  short znak;
+  char  extended;
   short ktory;
-  char bufor[5];
+  char  bufor[5];
   unsigned long ile;
 
   CzytajCmdLine(argc, argv);
@@ -1477,6 +1476,7 @@ int main(int argc, char* argv[])
   ileGen = 0;
   PusteTabele();
   ZapelnijMape();
+
   DrukujMape();
   znak = getch(); // praca krokowa
   _next:
