@@ -106,7 +106,7 @@ void DodajZwierz(short x, short y, short id)
   listaZwierz[ileZwierz].oiz_common.oic_po= 0; // nieprzetworzony
 
   // dok³adne info o obiekcie
-  listaZwierz[ileZwierz].oiz_zapas = 5;
+  listaZwierz[ileZwierz].oiz_zapas = 8;
   ileZwierz++;
 } // DodajZwierz
 
@@ -152,6 +152,8 @@ short StanRosliny(short x, short y)
     return 0; // poza zakresem - tam nic nie ma!
 
   poz = mapa[x][y].pm_roslina.pm1_poz;
+  if (poz <= 0)
+    return 0; // tam nie ma roœliny!
   return listaRoslin[poz].oir_poziom;
 } // StanRosliny
 
@@ -212,6 +214,10 @@ short WybierzFood(short x1, short y1, short* destX, short* destY)
     if (RoslinaJadalna(stan))
       return 1;
     }
+    
+  // zostañ tam gdzie jesteœ
+  *destX = x1;
+  *destY = y1;
   return 0; // nie ma nic jadalnego w okolicy
 } // WybierzFood
 
@@ -244,25 +250,28 @@ void PrzetworzMape(void)
 
       //=== Ustal miejsce do którego ma siê przemieœciæ
       zjedz = WybierzFood(mapX, mapY, &destX, &destY);
+      if (destX != mapX
+        ||destY != mapY) // tylko gdy zmienia miejsce
+        {
+        // przepisz dane ze starego miejsca do nowego
+        mapa[destX][destY].pm_zwierz.pm1_typ = mapa[mapX][mapY].pm_zwierz.pm1_typ;
+        mapa[destX][destY].pm_zwierz.pm1_poz = mapa[mapX][mapY].pm_zwierz.pm1_poz;
 
-      // przepisz dane ze starego miejsca do nowego
-      mapa[destX][destY].pm_zwierz.pm1_typ = mapa[mapX][mapY].pm_zwierz.pm1_typ;
-      mapa[destX][destY].pm_zwierz.pm1_poz = mapa[mapX][mapY].pm_zwierz.pm1_poz;
+        // wyma¿ w starym miejscu na mapie
+        mapa[mapX][mapY].pm_zwierz.pm1_typ = 0;
+        mapa[mapX][mapY].pm_zwierz.pm1_poz = 0;
 
-      // wyma¿ w starym miejscu na mapie
-      mapa[mapX][mapY].pm_zwierz.pm1_typ = 0;
-      mapa[mapX][mapY].pm_zwierz.pm1_poz = 0;
-
-      // w tabeli zwierz zmieñ wspó³rzêdna na mapie
-      listaZwierz[poz].oiz_common.oic_x = destX;
-      listaZwierz[poz].oiz_common.oic_y = destY;
-
-      //=== zjedz trawê
+        // w tabeli zwierz zmieñ wspó³rzêdna na mapie
+        listaZwierz[poz].oiz_common.oic_x = destX;
+        listaZwierz[poz].oiz_common.oic_y = destY;
+        }
+      //=== zjedz trawê w miejscu postoju
       if (zjedz)
         {
-        .
         poz2 = mapa[destX][destY].pm_roslina.pm1_poz;
-        listaRoslin[poz2].oir_poziom = 0;
+        if (poz2 > 0) // jest trawa w tabeli
+          listaRoslin[poz2].oir_poziom = 0;
+        listaZwierz[poz].oiz_zapas += 2;          
         }
       //=== zmniejsz zapas
       if (listaZwierz[poz].oiz_zapas > 0)
