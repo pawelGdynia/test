@@ -602,7 +602,7 @@ short Id2PozZwierz(short id)
   for (a=0; a<ileZwierz; a++)
     if (listaZwierz[a].z_id == id)
       return a; // pozycja pasuj¹cego
-  return 0; // gdy nie znaleziono
+  return -1; // gdy nie znaleziono
 } // Id2PozZwierz
 
 //---------------------------------------------------------------------------
@@ -758,7 +758,7 @@ short WybierzManual(short poz, short x1, short y1, short* destX, short* destY, D
 
   // sprawdŸ czy na trasie jest zwierz do zjedzenia
   if (defZ1->dz_drapieznik // jestem drapie¿nikiem
-    && ptrMapa->pm_zwierz.pm1_tab == TAB_ZWIERZ) // jest do zjedzenia
+    && CzyMapaZwierz(x1, y1) == 1) // jest do zjedzenia roœlino¿erca
     {
     *destX = x1;
     *destY = y1;
@@ -962,6 +962,9 @@ void PrzetworzMape(void)
     }
   // usuñ martwe z listy
   UsunMartwe();
+  // sprawdŸ, czy bie¿¹cy jeszcze ¿yje
+  if (Id2PozZwierz(selZwierz) < 0)
+    selZwierz = -1; // ¿aden
 } // PrzetworzMape
 
 //@} weze_przetwarzanie
@@ -1144,11 +1147,24 @@ void DrukujZnakMapy(short x, short y)
 void PrintWazStats(short poz)
 {
   OBIEKTINFO_ZWIERZ* ptrZ;
-  short a;
+  short a, ile, reszta;
   ptrZ = listaZwierz+poz;
   printf("\n");
+  if (ptrZ->z_zapas > 10)
+    SetTextColor(FOREGROUND_GREEN);  
+  else
+    SetTextColor(FOREGROUND_RED);
+  printf("zapas: %2u ", ptrZ->z_zapas);
+  ile =ptrZ->z_zapas/10;
+  for (a=0; a<ile; a++)
+    printf("#");
+  ile = ptrZ->z_zapas - (ile*10); // reszta
+  for (a=0; a<ile; a++)
+    printf(".");
+  SetTextColor(FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);    
+  printf("                \n");
+
   printf("z_def: %u  \n", ptrZ->z_def);
-  printf("z_zapas: %u  \n", ptrZ->z_zapas);
   printf("z_size: %u  \n", ptrZ->z_size);
   printf("z_id: %u  \n", ptrZ->z_id);
   printf("x: %u  \n", ptrZ->z_common.x);
@@ -1185,7 +1201,10 @@ void DrukujMape(void)
   printf("MAPA %ux%u: %lu (+%u)      \n", xSize, ySize, ileGen, czestoPokaz);
   printf("weze: %u %u   \n", wazA, wazB);
   printf("dead: %lu   \n", martwe);
-  printf("wybrany: poz=%u id=%u     ", poz, (unsigned)listaZwierz[poz].z_id);
+  if (poz >= 0)
+    printf("wybrany: poz=%u id=%u     ", poz, (unsigned)listaZwierz[poz].z_id);
+  else
+    printf("nie wybrano                          ");
   printf("\n");
   for (y=0; y<ySize; y++)
     {
@@ -1196,7 +1215,7 @@ void DrukujMape(void)
   printf("\n");
   SetTextColor(FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
   printf("Wcisnij SPACJE, 1,2,3,4,5 q(koniec)\n");
-  printf("d(debug +/-) n(nastepny)\n");
+  printf("d(debug +/-) p(pop) n(nast)\n");
   printf("strzalki - kierunek ruchu\n");
   printf("\n");
   if (selZwierz != -1)
@@ -1255,6 +1274,7 @@ int main(int argc, char* argv[])
    PrzetworzMape();
 
   _pokaz: // tylko wyœwietl inaczej, bez przetwarzania
+//  system("cls");
   if ((ileGen % czestoPokaz)==0)
     {
     DrukujMape();
@@ -1298,6 +1318,22 @@ int main(int argc, char* argv[])
       }
     goto _pokaz;
     }
+  if (znak == 'p') // previous
+    {
+    if (selZwierz == -1)
+      selZwierz = listaZwierz[0].z_id; // nie by³o ¿adnego - to id pierwszego
+    else
+      {
+      short poz;
+      poz = Id2PozZwierz(selZwierz);
+      poz--;
+      if (poz < 0)
+        poz = ileZwierz;
+      selZwierz = listaZwierz[poz].z_id;
+      }
+    goto _pokaz;
+    }
+
   if (znak == 'q')
     {
     delete[] mapa;
