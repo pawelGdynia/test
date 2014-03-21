@@ -62,10 +62,13 @@ typedef struct
 //=== ZWIERZÊTA ============================================================
 typedef struct // info wspólne dla wszystkich wyst¹pieñ
   {
-  short defz_maxModul;  // do ilu modu³ów mo¿e rosn¹æ
   short defz_maxZapas;  // ile zasobow (trawy) mo¿e przechowaæ
-  short defz_zapNowyMod;// ile zasobów ¿ywnoœci trzeba na wzrost o 1 modu³
-  short defz_zasieg;    // zasiêg widocznoœci - do analizy
+  short defz_roslinozerca;
+  short defz_drapieznik;    
+  //short defz_maxModul;  // do ilu modu³ów mo¿e rosn¹æ
+
+  //short defz_zapNowyMod;// ile zasobów ¿ywnoœci trzeba na wzrost o 1 modu³
+  //short defz_zasieg;    // zasiêg widocznoœci - do analizy
   } DEF_ZWIERZ;
 
 typedef struct
@@ -75,7 +78,6 @@ typedef struct
 
   // dane indywidualne obiektu
   short oiz_zapas;  // bie¿acy poziom zapasu ¿ywnoœci
-  short oiz_gatunek;// 1 lub 2 - dwa konkurencyjne gatunki
   } OBIEKTINFO_ZWIERZ;
 
 
