@@ -426,7 +426,18 @@ void PrzetworzMape(void)
     if (listaZwierz[poz].oiz_defpoz == -1) // do usuniêcia
       {
       if (poz != (ileZwierz-1)) // to nie jest ostatni
+        {
         memmove(listaZwierz+poz, listaZwierz+poz+1, sizeof(listaZwierz[0])*(ileZwierz-poz-1));
+
+        // przenumeruj obiekty na mapie (o -1)
+        short a;
+        for (a=0; a<ileZwierz-poz-1; a++)
+          {
+          x = listaZwierz[poz+a].oiz_common.oic_x;
+          y = listaZwierz[poz+a].oiz_common.oic_y;
+          mapa[x][y].pm_zwierz.pm1_poz--; // przenumeruj o 1 w dó³
+          }
+        }
       ileZwierz--;
       martwe++;
       }
