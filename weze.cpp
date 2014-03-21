@@ -18,8 +18,10 @@
 //!  Alogorytmy przetwarzania obiektów i mapy
 //@{ @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
-static PUNKT_MAPY mapa[X_SIZE*Y_SIZE];
+static short xSize = 60;
+static short ySize = 60;
 
+static PUNKT_MAPY* mapa;
 static DEF_GRUNT defGrunt[] = {
   {0,0}, // 0, ziemia rolna
   {1,1}, // 1, ocean
@@ -43,9 +45,9 @@ static DEF_ZWIERZ defZwierz[] = {
 
 static long ileGen=0; // ile przebiegów
 static long martwe=0; // ile odesz³o
-static OBIEKTINFO_GRUNT   listaGrunt [X_SIZE*Y_SIZE+1];
-static OBIEKTINFO_ROSLINA listaRoslin[X_SIZE*Y_SIZE+1];
-static OBIEKTINFO_ZWIERZ  listaZwierz[X_SIZE*Y_SIZE+1];
+static OBIEKTINFO_GRUNT*   listaGrunt;
+static OBIEKTINFO_ROSLINA* listaRoslin;
+static OBIEKTINFO_ZWIERZ*  listaZwierz;
 static short ileGrunt =0;
 static short ileRoslin=0;
 static short ileZwierz=0;
@@ -54,7 +56,7 @@ static short ileZwierz=0;
 //! Zwraca adres punktu na mapie, niezale¿nie od wewnêtrznej organizacji
 PUNKT_MAPY* PtrPunktMapy(short x, short y)
 {
-  return &(mapa[(x*X_SIZE)+y]);
+  return &(mapa[(x*ySize)+y]);
 } // PtrPunktMapy
 
 //---------------------------------------------------------------------------
@@ -144,8 +146,8 @@ void ZapelnijMape(void)
 {
   short x,y;
 
-  for (x=0; x<X_SIZE; x++)
-    for (y=0; y<Y_SIZE; y++)
+  for (x=0; x<xSize; x++)
+    for (y=0; y<ySize; y++)
       {
       // grunty rolne - wszêdzie uprawne (typ 0)
       DodajGrunt(x, y, 0);
@@ -183,8 +185,8 @@ short CzyPunktZakres(short x, short y)
 {
   if (x < 0
     ||y < 0
-    ||x >= X_SIZE
-    ||y >= Y_SIZE)
+    ||x >= xSize
+    ||y >= ySize)
     return 0; // poza zakresem - tam nic nie ma!
   return 1; // ok
 } // CzyPunktZakres
@@ -556,23 +558,49 @@ void DrukujMape(void)
 
   COORD coord = {0,0};
   SetConsoleCursorPosition(hStdOut, coord);
-  printf("MAPA %ux%u: %lu\n", X_SIZE, Y_SIZE, ileGen);
+  printf("MAPA %ux%u: %lu\n", xSize, ySize, ileGen);
   printf("weze: %u\n", ileZwierz);
   printf("dead: %lu\n", martwe);
-  for (y=0; y<Y_SIZE; y++)
+  for (y=0; y<ySize; y++)
     {
-    for (x=0; x<X_SIZE; x++)
+    for (x=0; x<xSize; x++)
       DrukujZnakMapy(x,y);
     printf("\n"); // koniec linii
     }
   printf("\n");
 } // DrukujMape
 
+/*
+Parametry:
+1) xSize
+2) ySize
+3) czestoPokaz
+*/
+
 //---------------------------------------------------------------------------
 //! G³ówne wejœcie do programu
-int main(int /*argc*/, char* /*argv[]*/)
+int main(int argc, char* argv[])
 {
   short a, znak = ' ';
+  if (argc >= 3)
+    {
+    a = atoi(argv[1]);
+    if (a>3)
+      xSize = a;
+    a = atoi(argv[2]);
+    if (a >3)
+      ySize = a;
+    }
+  if (argc==4)
+    {
+    a = atoi(argv[3]);
+    if (a>1)
+      czestoPokaz = a;
+    }
+  mapa = new PUNKT_MAPY[xSize * ySize];
+  listaGrunt  = new OBIEKTINFO_GRUNT[xSize * ySize +1];
+  listaRoslin = new OBIEKTINFO_ROSLINA[xSize * ySize +1];
+  listaZwierz = new OBIEKTINFO_ZWIERZ[xSize * ySize +1];
 
   clrscr();
   hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -585,11 +613,17 @@ int main(int /*argc*/, char* /*argv[]*/)
   if ((ileGen % czestoPokaz)==0)
     {
     DrukujMape();
-    znak = getch(); // praca krokowa    
+    znak = getch(); // praca krokowa
     }
   SetTextColor(FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
   if (znak == 'q')
+    {
+    delete mapa;
+    delete listaGrunt;
+    delete listaRoslin;
+    delete listaZwierz;
     return 0;
+    }
   goto _next;
 
 // return 0;
