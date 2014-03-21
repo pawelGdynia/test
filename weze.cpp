@@ -101,8 +101,8 @@ typedef struct
 //!  Alogorytmy przetwarzania obiektów i mapy
 //@{ @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
-static short xSize = 60;
-static short ySize = 18;
+static short xSize = 40;
+static short ySize = 20;
 
 static PUNKT_MAPY* mapa;
 static DEF_GRUNT defGrunt[] = {
@@ -258,11 +258,11 @@ void ZapelnijMape(void)
       // roœliny
       //if (y%2) // tylko kilka rz¹dków roœliny zwyk³ej (typ 0)
         DodajRosline(x, y, 0);
-      if (x==y)
-        DodajZwierz(x, y, 0); // gatunek "0"
+//      if (x==y)
+//        DodajZwierz(x, y, 0); // gatunek "0"
       }
 // DodajZwierz(1, 1, 0);
- DodajZwierz(7, 8, 1);
+ DodajZwierz(1, 1, 1);
 } // ZapelnijMape
 
 short losowe[24][4] = { // wszystkie mo¿liwe kolejnoœci dla 4 elementów
@@ -276,8 +276,8 @@ short losowe[24][4] = { // wszystkie mo¿liwe kolejnoœci dla 4 elementów
 void UstalRandom4(short* num4)
 {
   short a;
-  a = random(24); // wybierz - która kolejnoœæ z 24 zostanie u¿yta
-//  a = 11;
+//  a = random(24); // wybierz - która kolejnoœæ z 24 zostanie u¿yta
+  a = 11;
   num4[0] = losowe[a][0];
   num4[1] = losowe[a][1];
   num4[2] = losowe[a][2];
@@ -288,12 +288,12 @@ void UstalRandom4(short* num4)
 //! SprawdŸ czy zadane wspó³rzêdne mieszcz¹ siê na mapie
 short CzyPunktZakres(short x, short y)
 {
-  if (x < 0
-    ||y < 0
-    ||x >= xSize
-    ||y >= ySize)
-    return 0; // poza zakresem - tam nic nie ma!
-  return 1; // ok
+  if (x >= 0
+    &&y >= 0
+    &&x < xSize
+    &&y < ySize)
+    return 1; // ok
+  return 0; // poza zakresem - tam nic nie ma!
 } // CzyPunktZakres
 
 //---------------------------------------------------------------------------
@@ -375,8 +375,8 @@ short WybierzFood(short x1, short y1, short* destX, short* destY, DEF_ZWIERZ* de
 {
   short a;
   short kolej[4];
-//  short lastX=x1;
-//  short lastY=y1;
+  short lastX=x1;
+  short lastY=y1;
 
   UstalRandom4(kolej);
   // w losowej kolejnoœci - sprawdŸ punkty s¹siednie
@@ -411,7 +411,7 @@ short WybierzFood(short x1, short y1, short* destX, short* destY, DEF_ZWIERZ* de
         if (CzyMapaZwierz(*destX, *destY)==1) // znalaz³ roœlino¿ercê
           return 2; // zjedz go!
         }
-      else // drapie¿nik nie jada roœlin
+      // else // drapie¿nik nie jada roœlin
         {
         if (def->dz_roslinozerca
           &&CzyMapaZwierz(*destX, *destY)==0)
@@ -422,6 +422,8 @@ short WybierzFood(short x1, short y1, short* destX, short* destY, DEF_ZWIERZ* de
             return 1; // wybierz ten punkt
           }
         }
+      lastX = *destX;
+      lastY = *destY;
       }
     }
   // SprawdŸ czy w punkcie bie¿¹cym jest roœlina
@@ -434,8 +436,8 @@ short WybierzFood(short x1, short y1, short* destX, short* destY, DEF_ZWIERZ* de
     }
 
   // przyjmij inny punkt w otoczeniu - wolny
-//  *destX = lastX;
-//  *destY = lastY;
+  *destX = lastX;
+  *destY = lastY;
   return 0; // nie ma nic jadalnego w okolicy
 } // WybierzFood
 
@@ -873,19 +875,15 @@ void DrukujZnakMapy(short x, short y)
     {
     poz = GetPozRoslina(x,y);
     znak[0] = '0' + listaRoslin[poz].r_poziom;
+    SetTextColor(FOREGROUND_RED | FOREGROUND_GREEN /*| FOREGROUND_INTENSITY*/);
     if (RoslinaJadalna(x,y))
-      {
-      SetTextColor(FOREGROUND_RED | FOREGROUND_GREEN /*| FOREGROUND_INTENSITY*/);
       znak[0] = 'o';
-      }
-    else
-      SetTextColor(FOREGROUND_GREEN);
     }
 
   // zwierzeta
   if (CzyMapaZwierz(x,y)) // jest zwierz w tabeli
     {
-    poz = ptr->pm_zwierz.pm1_poz;    
+    poz = ptr->pm_zwierz.pm1_poz;
     znak[0] = ZnakWeza(x,y);
     if (listaZwierz[poz].z_def == 0)
       SetTextColor(FOREGROUND_BLUE);
