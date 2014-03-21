@@ -49,14 +49,14 @@ static OBIEKTINFO_ROSLINA listaRoslin[X_SIZE*Y_SIZE+1];
 static OBIEKTINFO_ZWIERZ  listaZwierz[X_SIZE*Y_SIZE+1];
 static short ileGrunt =1; // zacznij od elementu 1, pomiñ zerowe miejsce w tabeli
 static short ileRoslin=1;
-static short ileZwierz=1;
+static short ileZwierz=0;
 //---------------------------------------------------------------------------
 //! Przygotuj 3 tabele na opisy obiektów
 void PusteTabele(void)
 {
   ileGrunt  = 1;
   ileRoslin = 1;
-  ileZwierz = 1;
+  ileZwierz = 0;
   memset(listaGrunt,  0, sizeof(listaGrunt));
   memset(listaRoslin, 0, sizeof(listaRoslin));
   memset(listaZwierz, 0, sizeof(listaZwierz));
@@ -104,6 +104,7 @@ void DodajRosline(short x, short y, short id)
 //! Dopisz na mapie dane zwierza
 void DodajZwierz(short x, short y, short id)
 {
+  ileZwierz++;
   // info w samej mapie
   mapa[x][y].pm_zwierz.pm1_typ = TYPOB_ZWIERZ;
   mapa[x][y].pm_zwierz.pm1_poz = ileZwierz;
@@ -116,7 +117,6 @@ void DodajZwierz(short x, short y, short id)
 
   // dok³adne info o obiekcie
   listaZwierz[ileZwierz].oiz_zapas = 8;
-  ileZwierz++;
 } // DodajZwierz
 
 //---------------------------------------------------------------------------
@@ -135,9 +135,9 @@ void ZapelnijMape(void)
       if (y<7) // tylko kilka rz¹dków
         DodajRosline(x, y, 1);
       }
-  DodajZwierz(3, 3, 1);
-  DodajZwierz(7, 3, 1);
   DodajZwierz(1, 1, 1);
+  DodajZwierz(2, 2, 1);
+  DodajZwierz(3, 3, 1);
 } // ZapelnijMape
 
 short losowe[24][4] = { // wszystkie mo¿liwe kolejnoœci dla 4 elementów
@@ -230,8 +230,9 @@ short WybierzFood(short x1, short y1, short* destX, short* destY)
         break;
       }
     stan = StanRosliny(*destX, *destY);
-    if (RoslinaJadalna(stan))
-      return 1;
+    if (mapa[*destX][*destY].pm_zwierz.pm1_typ == 0) // miejsce jest wolne
+      if (RoslinaJadalna(stan))
+        return 1; // wybierz ten punkt
     }
     
   // zostañ tam gdzie jesteœ
@@ -299,7 +300,7 @@ void PrzetworzMape(void)
         listaZwierz[poz].oiz_zapas--;
 
       //=== Niestety, jest martwy - usuñ go z mapy
-      if (listaZwierz[poz].oiz_zapas == 0)
+      if (listaZwierz[poz].oiz_zapas <= 0)
         {
         // 1.usuñ dane z mapy
         mapa[mapX][mapY].pm_zwierz.pm1_typ = 0;
@@ -311,9 +312,12 @@ void PrzetworzMape(void)
       }
 
   // usuñ martwe z listy
-  for (poz=1; poz<=ileZwierz; poz++)
+  for (poz=ileZwierz; poz>0; poz--)
     if (listaZwierz[poz].oiz_defid == 0) // do usuniêcia
       {
+      if (ileZwierz != poz) // to nie jest ostatni
+        memmove(listaZwierz+poz, listaZwierz+poz+1, sizeof(listaZwierz[0])*(ileZwierz-poz));
+      ileZwierz--;
       }
 } // PrzetworzMape
 
@@ -404,7 +408,7 @@ void DrukujMape(void)
 int main(int argc, char* argv[])
 {
   short a, znak = ' ';
-
+  short cykl=0;
   clrscr();
   hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
   SetTextColor(FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
@@ -412,9 +416,11 @@ int main(int argc, char* argv[])
   PusteTabele();
   ZapelnijMape();
   _next:
+  cykl++;
   PrzetworzMape();
   DrukujMape();
-  znak = getch(); // praca krokowa
+  if (cykl > 7000)
+    znak = getch(); // praca krokowa
   SetTextColor(FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
   if (znak == 'q')
     return 0;
