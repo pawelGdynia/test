@@ -1,6 +1,6 @@
-//----------------
-//  program g³ówny
-//----------------
+//---------------------------
+//  weze.cpp - przetwarzanie
+//---------------------------
 
 #pragma hdrstop
 #include <stdio.h>
@@ -32,7 +32,6 @@ static DEF_ZWIERZ defZwierz[] = {
 - wype³nij mapê danymi z pliku txt
 - zrzut mapy na standard output
   (ten sam format co input)
-- przetwarzanie + pêtla N-razy
 */
 
 static short ileGen=0; // ile przebiegów
@@ -101,6 +100,7 @@ void DodajZwierz(short x, short y, short id)
   mapa[x][y].pm_zwierz.pm1_poz = ileZwierz;
 
   // info "systemowe"
+  listaZwierz[ileZwierz].oiz_defid = id;
   listaZwierz[ileZwierz].oiz_common.oic_x = x;
   listaZwierz[ileZwierz].oiz_common.oic_y = y;
   listaZwierz[ileZwierz].oiz_common.oic_po= 0; // nieprzetworzony
@@ -134,6 +134,7 @@ void ZapelnijMape(void)
 void PrzetworzMape(void)
 {
   short x,y, poz;
+  short mapX, mapY;
   ileGen++;
 
   // roœliny
@@ -147,10 +148,25 @@ void PrzetworzMape(void)
 
   // zwierzêta
   for (poz=1; poz<=ileZwierz; poz++)
-    {
-    if (listaZwierz[poz].oiz_zapas > 0)
-      listaZwierz[poz].oiz_zapas--; // zmniejsz zapas
-    }
+    if (listaZwierz[poz].oiz_defid > 0) // pomijaj martwe
+      {
+      if (listaZwierz[poz].oiz_zapas > 0)
+        listaZwierz[poz].oiz_zapas--; // zmniejsz zapas
+      if (listaZwierz[poz].oiz_zapas == 0) // jest martwy
+        {
+        // 1.usuñ dane z mapy
+        mapX = listaZwierz[poz].oiz_common.oic_x;
+        mapY = listaZwierz[poz].oiz_common.oic_y;
+        mapa[mapX][mapY].pm_zwierz.pm1_typ = 0;
+        mapa[mapX][mapY].pm_zwierz.pm1_poz = 0;
+
+        // 2.oznakuj w tabeli jako martwy
+        listaZwierz[poz].oiz_defid = 0;
+        }
+      }
+
+  // usuñ martwe z listy
+
 } // PrzetworzMape
 
 //---------------------------------------------------------------------------
@@ -214,4 +230,5 @@ int main(int argc, char* argv[])
   return 0;
 }
 
-// eof
+// eof: weze.cpp
+
