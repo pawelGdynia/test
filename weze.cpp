@@ -118,7 +118,7 @@ void DodajRosline(short x, short y, short id)
 
 //---------------------------------------------------------------------------
 //! Dopisz na mapie dane zwierza
-void DodajZwierz(short x, short y, short id)
+void DodajZwierz(short x, short y, short id, short gatunek)
 {
   PUNKT_MAPY* ptr;
   ptr = PtrPunktMapy(x,y);
@@ -134,6 +134,7 @@ void DodajZwierz(short x, short y, short id)
   // dok³adne info o obiekcie
   listaZwierz[ileZwierz].oiz_defpoz = id;
   listaZwierz[ileZwierz].oiz_zapas = 8;
+  listaZwierz[ileZwierz].oiz_gatunek = gatunek;
 
   ileZwierz++;
 } // DodajZwierz
@@ -154,9 +155,10 @@ void ZapelnijMape(void)
       if (y%2) // tylko kilka rz¹dków roœliny zwyk³ej (typ 0)
         DodajRosline(x, y, 0);
       }
-  DodajZwierz(1, 1, 0);
-  DodajZwierz(2, 2, 0);
-  DodajZwierz(3, 3, 0);
+  DodajZwierz(1, 1, 0, 1);
+  DodajZwierz(2, 2, 0, 1);
+  DodajZwierz(3, 3, 0, 2);
+  DodajZwierz(4, 4, 0, 2);
 } // ZapelnijMape
 
 short losowe[24][4] = { // wszystkie mo¿liwe kolejnoœci dla 4 elementów
@@ -442,7 +444,7 @@ void ProcessZwierz(short poz)
     if (ok)
       {
       listaZwierz[poz].oiz_zapas -= 10; // zmniejsz poziom zapasu matce
-      DodajZwierz(destX2, destY2, 1);
+      DodajZwierz(destX2, destY2, 1, listaZwierz[poz].oiz_gatunek);
       }
     }
 } // ProcessZwierz
@@ -542,7 +544,7 @@ void DrukujZnakMapy(short x, short y)
   poz = ptr->pm_grunt.pm1_poz;
   if (ptr->pm_grunt.pm1_tab != 0)
     {
-    SetTextColor(FOREGROUND_BLUE);
+    SetTextColor(FOREGROUND_RED | FOREGROUND_GREEN);
     strcpy(znak, ".");
     }
 
@@ -565,9 +567,9 @@ void DrukujZnakMapy(short x, short y)
     {
     poz = GetPozZwierz(x,y);
     znak[0] = 'A' + listaZwierz[poz].oiz_zapas -1;
-    //if (listaZwierz[poz].oiz_zapas < 10)
-    //  SetTextColor(FOREGROUND_BLUE);
-    //else
+    if (listaZwierz[poz].oiz_gatunek == 1)
+      SetTextColor(FOREGROUND_BLUE);
+    else // 2
       SetTextColor(FOREGROUND_RED);
     }
   PutZnak(znak);

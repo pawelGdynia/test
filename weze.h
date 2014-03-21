@@ -29,7 +29,7 @@ typedef struct
   short oic_po; // czy po przetworzeniu
   } OBIEKTINFO_COMMON;
 
-//=== GRUNTY
+//=== GRUNTY ===============================================================
 typedef struct // info wspólne dla wszystkich wyst¹pieñ
   {
   short defg_blok; // miejsce niedostêpne - ani roœlin ani zwierz¹t
@@ -44,7 +44,7 @@ typedef struct // info dla jednego punktu
   // dane indywidualne obiektu: brak
   } OBIEKTINFO_GRUNT;
 
-//== ROŒLINY
+//== ROŒLINY ===============================================================
 typedef struct // info wspólne dla wszystkich wyst¹pieñ
   {
   short defr_czasWzrostu; // max poziom, ile okresów na pe³ny wzrost od zera
@@ -59,7 +59,7 @@ typedef struct
   short oir_poziom; // bie¿acy poziom wzrostu - max to defr_czasWzrostu
   } OBIEKTINFO_ROSLINA;
 
-//=== ZWIERZÊTA
+//=== ZWIERZÊTA ============================================================
 typedef struct // info wspólne dla wszystkich wyst¹pieñ
   {
   short defz_maxModul;  // do ilu modu³ów mo¿e rosn¹æ
@@ -74,7 +74,8 @@ typedef struct
   OBIEKTINFO_COMMON oiz_common; // informacje bazowe, systemowe
 
   // dane indywidualne obiektu
-  short oiz_zapas; // bie¿acy poziom zapasu ¿ywnoœci
+  short oiz_zapas;  // bie¿acy poziom zapasu ¿ywnoœci
+  short oiz_gatunek;// 1 lub 2 - dwa konkurencyjne gatunki
   } OBIEKTINFO_ZWIERZ;
 
 
