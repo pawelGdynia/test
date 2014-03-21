@@ -7,7 +7,7 @@
 #define TAB_ROSLINA 2
 #define TAB_ZWIERZ  3
 
-#define MAX_SIZE 12
+#define MAX_SIZE 15
 typedef struct
   {
   short pm1_tab; // TAB_*: w której tabeli obiektów znajduje siê opis
@@ -81,8 +81,8 @@ typedef struct
 
   // dane indywidualne obiektu
   short z_zapas;  // bie¿acy poziom zapasu ¿ywnoœci
-  short z_x[MAX_SIZE];// wspó³rzêdne wszystkich segmentów
-  short z_y[MAX_SIZE];
+  short z_x[MAX_SIZE+1];// wspó³rzêdne wszystkich segmentów
+  short z_y[MAX_SIZE+1];
   short z_size;
   } OBIEKTINFO_ZWIERZ;
 
