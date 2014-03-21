@@ -10,6 +10,14 @@
 
 #include "weze.h"
 
+
+
+
+//   @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+//!  @name weze_przetwarzanie
+//!  Alogorytmy przetwarzania obiektów i mapy
+//@{ @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
 static PUNKT_MAPY mapa[X_SIZE][Y_SIZE];
 
 static DEF_GRUNT defGrunt[] = {
@@ -127,17 +135,27 @@ void ZapelnijMape(void)
       if (y<4) // tylko kilka rz¹dków
         DodajRosline(x, y, 1);
       }
-  DodajZwierz(3, 3, 1); // tylko 1 sztuka
+  DodajZwierz(3, 3, 1);
+  DodajZwierz(7, 3, 1);
+  DodajZwierz(1, 1, 1);
 } // ZapelnijMape
 
+short losowe[24][4] = { // rosn¹co
+  {1,2,3,4}, {1,2,4,3}, {1,3,2,4}, {1,3,4,2}, {1,4,2,3}, {1,4,3,2},
+  {2,1,3,4}, {2,1,4,3}, {2,3,1,4}, {2,3,4,1}, {2,4,1,3}, {2,4,3,1},
+  {3,1,2,4}, {3,1,4,2}, {3,2,1,4}, {3,2,4,1}, {3,4,1,2}, {3,4,2,1},
+  {4,1,2,3}, {4,1,3,2}, {4,2,1,3}, {4,2,3,1}, {4,3,1,2}, {4,3,2,1}
+  };
 //---------------------------------------------------------------------------
 //! Ustaw losowo liczby 1-4
 void UstalRandom4(short* num4)
 {
-  num4[0] = 1;
-  num4[1] = 2;
-  num4[2] = 3;
-  num4[3] = 4;
+  short a;
+  a = random(24);
+  num4[0] = losowe[a][0];
+  num4[1] = losowe[a][1];
+  num4[2] = losowe[a][2];
+  num4[3] = losowe[a][3];
 } // UstalRandom4
 
 //---------------------------------------------------------------------------
@@ -275,11 +293,12 @@ void PrzetworzMape(void)
         if (listaZwierz[poz].oiz_zapas < 20)
           listaZwierz[poz].oiz_zapas += 2;
         }
+
       //=== zmniejsz zapas
       if (listaZwierz[poz].oiz_zapas > 0)
         listaZwierz[poz].oiz_zapas--;
 
-      //=== Niestety, jest martwy - usuñ go
+      //=== Niestety, jest martwy - usuñ go z mapy
       if (listaZwierz[poz].oiz_zapas == 0)
         {
         // 1.usuñ dane z mapy
@@ -298,9 +317,17 @@ void PrzetworzMape(void)
       }
 } // PrzetworzMape
 
-static HANDLE hStdOut;
-//static CONSOLE_SCREEN_BUFFER_INFO csbi;
+//@} weze_przetwarzanie
 
+
+
+
+//   @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+//!  @name weze_output
+//!  Drukowanie aktualnego stanu mapy
+//@{ @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+static HANDLE hStdOut;
 //---------------------------------------------------------------------------
 //! Ustaw kolor tekstu - kolor zdefiniowany w windows.h
 void SetTextColor(short kolor)
@@ -352,7 +379,9 @@ void DrukujZnakMapy(short x, short y)
 void DrukujMape(void)
 {
   short x, y;
-  clrscr();
+
+  COORD coord = {0,0};
+  SetConsoleCursorPosition(hStdOut, coord);
   printf("====== MAPA nr: %u ===\n", ileGen);
   for (y=0; y<Y_SIZE; y++)
     {
@@ -368,19 +397,18 @@ void DrukujMape(void)
 #pragma argsused
 int main(int argc, char* argv[])
 {
-  short a, znak;
+  short a, znak = ' ';
+
+  clrscr();
   hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
   SetTextColor(FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
-  printf("WEZE 1.0");
-  printf("\n");
-
   ileGen = 0;
   PusteTabele();
   ZapelnijMape();
   _next:
   PrzetworzMape();
   DrukujMape();
-  znak = getch();
+//  znak = getch(); // praca krokowa
   SetTextColor(FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
   if (znak == 'q')
     return 0;
@@ -388,6 +416,8 @@ int main(int argc, char* argv[])
 
   return 0;
 } // main
+
+//@} weze_output
 
 // eof: weze.cpp
 
