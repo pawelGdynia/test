@@ -41,8 +41,8 @@ static DEF_ZWIERZ defZwierz[] = {
 - wype³nij mapê danymi z pliku txt
 */
 
-static short ileGen=0; // ile przebiegów
-static short martwe=0; // ile odesz³o
+static long ileGen=0; // ile przebiegów
+static long martwe=0; // ile odesz³o
 static OBIEKTINFO_GRUNT   listaGrunt [X_SIZE*Y_SIZE+1];
 static OBIEKTINFO_ROSLINA listaRoslin[X_SIZE*Y_SIZE+1];
 static OBIEKTINFO_ZWIERZ  listaZwierz[X_SIZE*Y_SIZE+1];
@@ -153,7 +153,7 @@ short losowe[24][4] = { // wszystkie mo¿liwe kolejnoœci dla 4 elementów
 void UstalRandom4(short* num4)
 {
   short a;
-  a = 1;//random(24); // wybierz - która kolejnoœæ z 24 zostanie u¿yta
+  a = random(24); // wybierz - która kolejnoœæ z 24 zostanie u¿yta
   num4[0] = losowe[a][0];
   num4[1] = losowe[a][1];
   num4[2] = losowe[a][2];
@@ -342,7 +342,7 @@ void PrzetworzMape(void)
   ileGen++;
 
   // roœliny
-  for (y=0; y<Y_SIZE; y++)
+/*  for (y=0; y<Y_SIZE; y++)
     for (x=0; x<X_SIZE; x++)
       {
       if (CzyMapaRoslina(x,y)) // tu jest roœlina
@@ -351,8 +351,13 @@ void PrzetworzMape(void)
         if (listaRoslin[poz].oir_poziom < 9)
           listaRoslin[poz].oir_poziom++; // wzrost +1
         }
-      }
+      }*/
 
+  for (poz=0; poz<ileRoslin; poz++)
+    {
+    if (listaRoslin[poz].oir_poziom < 9)
+      listaRoslin[poz].oir_poziom++; // wzrost +1
+    }
   // zwierzêta
   for (poz=0; poz<ileZwierz; poz++)
     if (listaZwierz[poz].oiz_defpoz >= 0) // pomijaj martwe (czyli ujemne)
@@ -387,7 +392,7 @@ void PrzetworzMape(void)
             {
             listaRoslin[poz2].oir_poziom = 0;
             if (listaZwierz[poz].oiz_zapas < 20)
-              listaZwierz[poz].oiz_zapas += 2;
+              listaZwierz[poz].oiz_zapas += 3;
             }
           }
         }
@@ -519,9 +524,9 @@ void DrukujMape(void)
 
   COORD coord = {0,0};
   SetConsoleCursorPosition(hStdOut, coord);
-  printf("MAPA %ux%u: %u\n", X_SIZE, Y_SIZE, ileGen);
+  printf("MAPA %ux%u: %lu\n", X_SIZE, Y_SIZE, ileGen);
   printf("weze: %u\n", ileZwierz);
-  printf("dead: %u\n", martwe);
+  printf("dead: %lu\n", martwe);
   for (y=0; y<Y_SIZE; y++)
     {
     for (x=0; x<X_SIZE; x++)
@@ -533,8 +538,7 @@ void DrukujMape(void)
 
 //---------------------------------------------------------------------------
 //! G³ówne wejœcie do programu
-#pragma argsused
-int main(int argc, char* argv[])
+int main(int /*argc*/, char* /*argv[]*/)
 {
   short a, znak = ' ';
 
@@ -546,15 +550,16 @@ int main(int argc, char* argv[])
   ZapelnijMape();
   _next:
   PrzetworzMape();
-  DrukujMape();
+  if ((ileGen%10000)==0)
+    DrukujMape();
 //  if (ileGen > 7000)
-    znak = getch(); // praca krokowa
+//    znak = getch(); // praca krokowa
   SetTextColor(FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
   if (znak == 'q')
     return 0;
   goto _next;
 
-  return 0;
+// return 0;
 } // main
 
 //@} weze_output
