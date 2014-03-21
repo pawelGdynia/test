@@ -173,15 +173,35 @@ short CzyPunktZakres(short x, short y)
 } // CzyPunktZakres
 
 //---------------------------------------------------------------------------
+//! Sprawdza czy dla podanych wspó³rzêdnych wystêpuje obiekt - roœlina
+short CzyMapaRoslina(short x, short y)
+{
+  if (mapa[x][y].pm_roslina.pm1_tab == 0)
+    return 0; // nie ma tam roœliny
+
+  return 1; // jest
+} // CzyMapaRoslina
+
+//---------------------------------------------------------------------------
+//! Sprawdza czy dla podanych wspó³rzêdnych wystêpuje obiekt - roœlina
+short CzyMapaZwierz(short x, short y)
+{
+  if (mapa[x][y].pm_zwierz.pm1_tab == 0)
+    return 0; // nie ma tam nikogo
+
+  return 1; // jest
+} // CzyMapaZwierz
+
+//---------------------------------------------------------------------------
 //! Uniwersalna procedura sprawdzania czy roœlina jadalna
 short RoslinaJadalna(short x, short y)
 {
   short poz, ktoraDef;
   short poziomAkt, maxPoziomDef;
 
-  poz = mapa[x][y].pm_roslina.pm1_poz; // która roœlina z listy
-  if (mapa[x][y].pm_roslina.pm1_tab == 0)
+  if (CzyMapaRoslina(x,y)==0)
     return 0; // nie ma tam roœliny!
+  poz = mapa[x][y].pm_roslina.pm1_poz; // która roœlina z listy
   poziomAkt = listaRoslin[poz].oir_poziom;
   ktoraDef  = listaRoslin[poz].oir_defpoz;
   maxPoziomDef = defRoslina[ktoraDef].defr_czasWzrostu; // poziom maksymalny z defincji
@@ -238,7 +258,7 @@ short WybierzFood(short x1, short y1, short* destX, short* destY)
       }
     if (CzyPunktZakres(*destX, *destY))
       {
-      if (mapa[*destX][*destY].pm_zwierz.pm1_tab == 0) // miejsce jest wolne
+      if (CzyMapaZwierz(*destX, *destY)==0)
         {
         lastX = *destX;
         lastY = *destY;
@@ -289,7 +309,7 @@ short WybierzDlaNowego(short x1, short y1, short* destX, short* destY)
         break;
       }
     if (CzyPunktZakres(*destX, *destY))
-      if (mapa[*destX][*destY].pm_zwierz.pm1_tab == 0) // miejsce jest wolne
+      if (CzyMapaZwierz(*destX, *destY)==0) // miejsce jest wolne
         return 1; // wybierz ten punkt
     }
 
@@ -311,7 +331,7 @@ void PrzetworzMape(void)
   for (y=0; y<Y_SIZE; y++)
     for (x=0; x<X_SIZE; x++)
       {
-      if (mapa[x][y].pm_roslina.pm1_tab != 0) // tu jest roœlina
+      if (CzyMapaRoslina(x,y)) // tu jest roœlina
         {
         poz = mapa[x][y].pm_roslina.pm1_poz;
         if (listaRoslin[poz].oir_poziom < 9)
@@ -349,7 +369,7 @@ void PrzetworzMape(void)
         if (RoslinaJadalna(destX, destY))
           {
           poz2 = mapa[destX][destY].pm_roslina.pm1_poz;
-          if (mapa[destX][destY].pm_roslina.pm1_tab != 0) // jest trawa w tabeli
+          if (CzyMapaRoslina(destX,destY)) // jest trawa w tabeli
             {
             listaRoslin[poz2].oir_poziom = 0;
             if (listaZwierz[poz].oiz_zapas < 20)
@@ -438,10 +458,11 @@ void DrukujZnakMapy(short x, short y)
     SetTextColor(FOREGROUND_BLUE);
     strcpy(znak, ".");
     }
+
   // roœliny
-  poz = mapa[x][y].pm_roslina.pm1_poz;
-  if (mapa[x][y].pm_roslina.pm1_tab != 0)
+  if (CzyMapaRoslina(x,y)) // jest trawa w tabeli
     {
+    poz = mapa[x][y].pm_roslina.pm1_poz;
     znak[0] = '0' + listaRoslin[poz].oir_poziom;
     if (RoslinaJadalna(x,y))
       {
@@ -451,10 +472,11 @@ void DrukujZnakMapy(short x, short y)
     else
       SetTextColor(FOREGROUND_GREEN);
     }
+
   // zwierzeta
-  poz = mapa[x][y].pm_zwierz.pm1_poz;
-  if (mapa[x][y].pm_zwierz.pm1_tab != 0)
+  if (CzyMapaZwierz(x,y)) // jest zwierz w tabeli
     {
+    poz = mapa[x][y].pm_zwierz.pm1_poz;
     znak[0] = 'A' + listaZwierz[poz].oiz_zapas -1;
     //if (listaZwierz[poz].oiz_zapas < 10)
     //  SetTextColor(FOREGROUND_BLUE);
@@ -474,7 +496,7 @@ void DrukujMape(void)
   SetConsoleCursorPosition(hStdOut, coord);
   printf("MAPA %ux%u: %u\n", X_SIZE, Y_SIZE, ileGen);
   printf("weze: %u\n", ileZwierz);
-  printf("dead: %u\n", martwe);  
+  printf("dead: %u\n", martwe);
   for (y=0; y<Y_SIZE; y++)
     {
     for (x=0; x<X_SIZE; x++)
