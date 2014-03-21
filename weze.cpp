@@ -109,6 +109,16 @@ typedef struct
 //!  Procedury wyœwietlania na ekranie
 //@{ @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
+// kolory wed³ug: http://stackoverflow.com/questions/17125440/c-win32-console-color
+
+#define KOLOR_DARKBLUE    (FOREGROUND_BLUE)
+#define KOLOR_DARKRED     (FOREGROUND_RED)
+#define KOLOR_RED         (FOREGROUND_RED   | FOREGROUND_INTENSITY)
+#define KOLOR_DARKGREEN   (FOREGROUND_GREEN)
+#define KOLOR_GREEN       (FOREGROUND_GREEN | FOREGROUND_INTENSITY)
+#define KOLOR_DARKGREY    (FOREGROUND_RED   | FOREGROUND_GREEN | FOREGROUND_BLUE)
+#define KOLOR_DARKYELLOW  (FOREGROUND_RED   | FOREGROUND_GREEN)
+
 static HANDLE hStdOut;
 //---------------------------------------------------------------------------
 //! Ustaw kolor tekstu - kolor zdefiniowany w windows.h
@@ -139,7 +149,7 @@ void PrzygotujEkran(void)
 {
   clrscr();
   hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
-  SetTekstKolor(FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
+  SetTekstKolor(KOLOR_DARKGREY);
 } // PrzygotujEkran
 
 //@} weze_output
@@ -1252,18 +1262,18 @@ char ZnakGruntu(PUNKT_MAPY* ptrMapa, short* kolor)
   switch (ptrG->g_def)
     {
     case G_ROLNA:
-      *kolor = FOREGROUND_GREEN;
+      *kolor = KOLOR_DARKGREEN;
       return '.';
 
     case G_OCEAN:
-      *kolor = FOREGROUND_GREEN;
+      *kolor = KOLOR_DARKGREEN;
       return ' ';
 
     case G_PUSTKA:
-      *kolor = FOREGROUND_GREEN | FOREGROUND_RED;
+      *kolor = KOLOR_DARKYELLOW;
       return '*';
     }
-  *kolor = FOREGROUND_RED;
+  *kolor = KOLOR_DARKRED;
   return '?';
 } // ZnakGruntu
 
@@ -1279,7 +1289,7 @@ void DrukujZnakMapy(short x, short y)
   // grunt
   poz = ptrMapa->pm_grunt.pm1_poz;
   znak[0] = ZnakGruntu(ptrMapa, &kolor);
-  SetTekstKolor(kolor); //FOREGROUND_RED | FOREGROUND_GREEN);
+  SetTekstKolor(kolor); 
 
 
   // roœliny
@@ -1287,7 +1297,7 @@ void DrukujZnakMapy(short x, short y)
     {
     poz = GetPozRoslina(x,y);
     znak[0] = '0' + listaRoslin[poz].r_poziom;
-    SetTekstKolor(FOREGROUND_RED | FOREGROUND_GREEN /*| FOREGROUND_INTENSITY*/);
+    SetTekstKolor(KOLOR_DARKYELLOW);
     if (RoslinaJadalna(x,y))
       znak[0] = 'o';
     }
@@ -1302,16 +1312,16 @@ void DrukujZnakMapy(short x, short y)
       if (listaZwierz[poz].z_def == 0)
         {
         if (listaZwierz[poz].z_id == selZwierz)
-          SetTekstKolor(FOREGROUND_GREEN | FOREGROUND_INTENSITY);
+          SetTekstKolor(KOLOR_GREEN);
         else
-          SetTekstKolor(FOREGROUND_GREEN);
+          SetTekstKolor(KOLOR_DARKGREEN);
         }
       else // 2
         {
         if (listaZwierz[poz].z_id == selZwierz)
-          SetTekstKolor(FOREGROUND_RED | FOREGROUND_INTENSITY);
+          SetTekstKolor(KOLOR_RED);
         else
-          SetTekstKolor(FOREGROUND_RED);
+          SetTekstKolor(KOLOR_DARKRED);
         }
       znak[0] = ZnakWeza(x,y);
       }
@@ -1329,9 +1339,9 @@ void PrintWazStats(short poz)
   ptrZ = listaZwierz+poz;
   printf("\n");
   if (ptrZ->z_zapas > 10)
-    SetTekstKolor(FOREGROUND_GREEN);
+    SetTekstKolor(KOLOR_DARKGREEN);
   else
-    SetTekstKolor(FOREGROUND_RED);
+    SetTekstKolor(KOLOR_DARKRED);
   printf("zapas: %2u ", ptrZ->z_zapas);
   ile =ptrZ->z_zapas/10;
   for (a=0; a<ile; a++)
@@ -1339,7 +1349,7 @@ void PrintWazStats(short poz)
   ile = ptrZ->z_zapas - (ile*10); // reszta
   for (a=0; a<ile; a++)
     printf(".");
-  SetTekstKolor(FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
+  SetTekstKolor(KOLOR_DARKGREY);
   printf("                \n");
 
   printf("z_def: %u  \n", ptrZ->z_def);
@@ -1390,7 +1400,7 @@ void DrukujMape(void)
     printf("\n"); // koniec linii
     }
   printf("\n");
-  SetTekstKolor(FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+  SetTekstKolor(KOLOR_DARKGREY);
   printf("Wcisnij SPACJE, 1,2,3,4,5 q(koniec)\n");
   printf("d(debug +/-) p(pop) n(nast)\n");
   printf("strzalki - kierunek ruchu\n");
@@ -1475,7 +1485,7 @@ int main(int argc, char* argv[])
       kierunek = getch(); // HMKP
       }
     }
-  SetTekstKolor(FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
+  SetTekstKolor(KOLOR_DARKGREY);
   if (znak == '1')
     czestoPokaz = 1;
   if (znak == '2')
