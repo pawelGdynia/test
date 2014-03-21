@@ -134,7 +134,7 @@ void ZapelnijMape(void)
       DodajGrunt(x, y, 0);
 
       // roœliny
-      //if (y<7) // tylko kilka rz¹dków roœliny zwyk³ej (typ 0)
+      if (x%2 && y%2) // tylko kilka rz¹dków roœliny zwyk³ej (typ 0)
         DodajRosline(x, y, 0);
       }
   DodajZwierz(1, 1, 0);
@@ -180,6 +180,8 @@ short RoslinaJadalna(short x, short y)
   short poziomAkt, maxPoziomDef;
 
   poz = mapa[x][y].pm_roslina.pm1_poz; // która roœlina z listy
+  if (mapa[x][y].pm_roslina.pm1_tab == 0)
+    return 0; // nie ma tam roœliny!
   poziomAkt = listaRoslin[poz].oir_poziom;
   ktoraDef  = listaRoslin[poz].oir_defpoz;
   maxPoziomDef = defRoslina[ktoraDef].defr_czasWzrostu; // poziom maksymalny z defincji
@@ -196,6 +198,8 @@ short WybierzFood(short x1, short y1, short* destX, short* destY)
 {
   short a;
   short kolej[4];
+  short lastX=x1;
+  short lastY=y1;
 
   UstalRandom4(kolej);
 
@@ -235,14 +239,19 @@ short WybierzFood(short x1, short y1, short* destX, short* destY)
     if (CzyPunktZakres(*destX, *destY))
       {
       if (mapa[*destX][*destY].pm_zwierz.pm1_tab == 0) // miejsce jest wolne
+        {
+        lastX = *destX;
+        lastY = *destY;
+
         if (RoslinaJadalna(*destX, *destY))
           return 1; // wybierz ten punkt
+        }
       }
     }
 
-  // zostañ tam gdzie jesteœ
-  *destX = x1;
-  *destY = y1;
+  // przyjmij inny punkt w otoczeniu - wolny
+  *destX = lastX;
+  *destY = lastY;
   return 0; // nie ma nic jadalnego w okolicy
 } // WybierzFood
 
@@ -302,9 +311,12 @@ void PrzetworzMape(void)
   for (y=0; y<Y_SIZE; y++)
     for (x=0; x<X_SIZE; x++)
       {
-      poz = mapa[x][y].pm_roslina.pm1_poz;
-      if (listaRoslin[poz].oir_poziom < 9)
-        listaRoslin[poz].oir_poziom++; // wzrost +1
+      if (mapa[x][y].pm_roslina.pm1_tab != 0) // tu jest roœlina
+        {
+        poz = mapa[x][y].pm_roslina.pm1_poz;
+        if (listaRoslin[poz].oir_poziom < 9)
+          listaRoslin[poz].oir_poziom++; // wzrost +1
+        }
       }
 
   // zwierzêta
@@ -334,11 +346,16 @@ void PrzetworzMape(void)
       //=== zjedz trawê w miejscu postoju
       if (zjedz)
         {
-        poz2 = mapa[destX][destY].pm_roslina.pm1_poz;
-        if (poz2 > 0) // jest trawa w tabeli
-          listaRoslin[poz2].oir_poziom = 0;
-        if (listaZwierz[poz].oiz_zapas < 20)
-          listaZwierz[poz].oiz_zapas += 2;
+        if (RoslinaJadalna(destX, destY))
+          {
+          poz2 = mapa[destX][destY].pm_roslina.pm1_poz;
+          if (mapa[destX][destY].pm_roslina.pm1_tab != 0) // jest trawa w tabeli
+            {
+            listaRoslin[poz2].oir_poziom = 0;
+            if (listaZwierz[poz].oiz_zapas < 20)
+              listaZwierz[poz].oiz_zapas += 2;
+            }
+          }
         }
 
       //=== zmniejsz zapas
@@ -371,7 +388,7 @@ void PrzetworzMape(void)
       }
 
   // usuñ martwe z listy
-  for (poz=ileZwierz; poz>0; poz--)
+  for (poz=ileZwierz-1; poz>=0; poz--)
     if (listaZwierz[poz].oiz_defpoz == -1) // do usuniêcia
       {
       if (ileZwierz != poz) // to nie jest ostatni
@@ -439,9 +456,9 @@ void DrukujZnakMapy(short x, short y)
   if (mapa[x][y].pm_zwierz.pm1_tab != 0)
     {
     znak[0] = 'A' + listaZwierz[poz].oiz_zapas -1;
-    if (listaZwierz[poz].oiz_zapas < 10)
-      SetTextColor(FOREGROUND_BLUE);
-    else
+    //if (listaZwierz[poz].oiz_zapas < 10)
+    //  SetTextColor(FOREGROUND_BLUE);
+    //else
       SetTextColor(FOREGROUND_RED);
     }
   PutZnak(znak);
@@ -480,7 +497,6 @@ int main(int argc, char* argv[])
   ileGen = 0;
   PusteTabele();
   ZapelnijMape();
-
   _next:
   PrzetworzMape();
   DrukujMape();
