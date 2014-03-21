@@ -126,6 +126,15 @@ void PutZnak(char* znak)
 } // PutZnak
 
 //---------------------------------------------------------------------------
+void SetKursorPoz(short x, short y)
+{
+  COORD coord = {0,0};
+  coord.X = x;
+  coord.Y = y;
+  SetConsoleCursorPosition(hStdOut, coord);
+} // SetKursorPoz
+
+//---------------------------------------------------------------------------
 void PrzygotujEkran(void)
 {
   clrscr();
@@ -1365,8 +1374,7 @@ void DrukujMape(void)
     else
       wazB++;
     }
-  COORD coord = {0,0};
-  SetConsoleCursorPosition(hStdOut, coord);
+  SetKursorPoz(0,0);
   printf("MAPA %ux%u: %lu (+%u)      \n", xSize, ySize, ileGen, czestoPokaz);
   printf("weze: %u %u   \n", wazA, wazB);
   printf("dead: %lu   \n", martwe);
