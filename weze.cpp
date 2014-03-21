@@ -134,7 +134,8 @@ static short ileRoslin=0;
 static short ileZwierz=0;
 static short maxZwierzId=0;
 static char  kierunek = ' '; //!< kierunek wklepany przez operatora
-static short idZwierz = 1;   //!< -1 oznacz wszystkie
+static short selZwierz = 1;   //!< wybrany jako podœwietlony
+static short debug=0;
 short WybranyKierunek(void);
 short PunktWlasnyZwierz(OBIEKTINFO_ZWIERZ* ptrZ1, short x, short y);
 //---------------------------------------------------------------------------
@@ -952,7 +953,7 @@ void PrzetworzMape(void)
   for (poz=0; poz<max; poz++)
     {
     short manual=0;
-    if (listaZwierz[poz].z_id == idZwierz) // ten jest przetwarzany
+    if (listaZwierz[poz].z_id == selZwierz) // ten jest przetwarzany
       {
       if (WybranyKierunek() > 0)
         manual = 1;
@@ -1041,7 +1042,7 @@ char ZnakSegmentu(short* tab)
 
 //---------------------------------------------------------------------------
 //! Ustal jaki znak pozwala na pokazanie kszta³tu
-char ZnakWeza(short x, short y, short debug)
+char ZnakWeza(short x, short y)
 {
   OBIEKTINFO_ZWIERZ* ptrZ;
   char znak = '*';
@@ -1064,28 +1065,29 @@ char ZnakWeza(short x, short y, short debug)
           znak = '$';
         return znak;
         }
-//      else
-//        {
-//        if (debug) // w trybie debug pokazuj cyferki
-//          return '0'+a;
-//        }
-      // zwyk³e znaki segmentowe
-      memset(bs, 0, sizeof(bs));
-      t = TypSasiada(ptrZ->z_x[a], ptrZ->z_y[a], ptrZ->z_x[a-1], ptrZ->z_y[a-1]);
-      bs[t] = 1;
-      if (a < ptrZ->z_size-1) // nie sprawdzaj dla ostatniego
+      else
         {
-        t = TypSasiada(ptrZ->z_x[a], ptrZ->z_y[a], ptrZ->z_x[a+1], ptrZ->z_y[a+1]);
+        if (debug) // w trybie debug pokazuj cyferki
+          return '0'+a;
+
+        // zwyk³e znaki segmentowe
+        memset(bs, 0, sizeof(bs));
+        t = TypSasiada(ptrZ->z_x[a], ptrZ->z_y[a], ptrZ->z_x[a-1], ptrZ->z_y[a-1]);
         bs[t] = 1;
+        if (a < ptrZ->z_size-1) // nie sprawdzaj dla ostatniego
+          {
+          t = TypSasiada(ptrZ->z_x[a], ptrZ->z_y[a], ptrZ->z_x[a+1], ptrZ->z_y[a+1]);
+          bs[t] = 1;
+          }
+        znak = ZnakSegmentu(bs);
         }
-      znak = ZnakSegmentu(bs);
       }
   return znak;
 } // ZnakWeza
 
 //---------------------------------------------------------------------------
 //! Zamieñ punkt mapy na literkê do wydruku
-void DrukujZnakMapy(short x, short y, short zwierz)
+void DrukujZnakMapy(short x, short y)
 {
   char  znak[2]= "_";
   short poz;
@@ -1114,42 +1116,32 @@ void DrukujZnakMapy(short x, short y, short zwierz)
   if (CzyMapaZwierz(x,y)) // jest zwierz w tabeli
     {
     poz = ptr->pm_zwierz.pm1_poz;
-//    if (zwierz == -1  // bierz wszystkie
-//      ||zwierz == listaZwierz[poz].z_id)// bierz konkretnie tego
+    if (debug == 0 // pokazuj wszystkie - nie ma trybu debug
+      ||listaZwierz[poz].z_id == selZwierz) // bie¿¹cy
       {
       if (listaZwierz[poz].z_def == 0)
         {
-        if (zwierz == listaZwierz[poz].z_id)
+        if (listaZwierz[poz].z_id == selZwierz)
           SetTextColor(FOREGROUND_GREEN | FOREGROUND_INTENSITY);
         else
           SetTextColor(FOREGROUND_GREEN);
         }
       else // 2
         {
-        if (zwierz == listaZwierz[poz].z_id)
+        if (listaZwierz[poz].z_id == selZwierz)
           SetTextColor(FOREGROUND_RED | FOREGROUND_INTENSITY);
         else
           SetTextColor(FOREGROUND_RED);
         }
-      znak[0] = ZnakWeza(x,y, zwierz != -1);
+      znak[0] = ZnakWeza(x,y);
       }
     }
   PutZnak(znak);
 } // DrukujZnakMapy
-/*
-  short z_def; // która definicja w³aœciwoœci
-  OBIEKTINFO_COMMON z_common; // informacje bazowe, systemowe
 
-  // dane indywidualne obiektu
-  short z_zapas;  // bie¿acy poziom zapasu ¿ywnoœci
-  short z_x[MAX_SIZE+1];// wspó³rzêdne wszystkich segmentów
-  short z_y[MAX_SIZE+1];
-  short z_size;
-  short z_id; // unikalny numer
-*/
 //---------------------------------------------------------------------------
-//! Wydrukuj do oddzielnego pliku txt zrzut stanu wskazanego wê¿a
-void Waz2Plik(short poz)
+//! Poka¿ sk³adniki wskazanego wê¿a
+void PrintWazStats(short poz)
 {
   OBIEKTINFO_ZWIERZ* ptrZ;
   short a;
@@ -1166,18 +1158,18 @@ void Waz2Plik(short poz)
     printf("PKT %u: x=%u y=%u           \n", a, ptrZ->z_x[a], ptrZ->z_y[a]);
     }
   printf("====================================");
-} // Waz2Plik
+} // PrintWazStats
 
 //---------------------------------------------------------------------------
 //! Wyrzuæ stan mapy na standard output, wszystkie zwierza (-1) lub wskazany
-void DrukujMape(short idZwierz)
+void DrukujMape(void)
 {
   short x, y;
   short a, wazA, wazB;
   short poz=0;
 
-  if (idZwierz != -1)
-    poz = Id2PozZwierz(idZwierz);
+  if (selZwierz != -1)
+    poz = Id2PozZwierz(selZwierz);
   wazA = 0;
   wazB = 0;
   for (a=0; a<ileZwierz;a++)
@@ -1193,27 +1185,22 @@ void DrukujMape(short idZwierz)
   printf("MAPA %ux%u: %lu (+%u)      \n", xSize, ySize, ileGen, czestoPokaz);
   printf("weze: %u %u   \n", wazA, wazB);
   printf("dead: %lu   \n", martwe);
-  if (idZwierz == -1)
-    printf("wszystkie                       ");
-  else
-    {
-    printf("tylko: poz=%u id=%u    ", poz, (unsigned)listaZwierz[poz].z_id);
-    }
+  printf("wybrany: poz=%u id=%u     ", poz, (unsigned)listaZwierz[poz].z_id);
   printf("\n");
   for (y=0; y<ySize; y++)
     {
     for (x=0; x<xSize; x++)
-      DrukujZnakMapy(x,y, idZwierz);
+      DrukujZnakMapy(x,y);
     printf("\n"); // koniec linii
     }
   printf("\n");
   SetTextColor(FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
   printf("Wcisnij SPACJE, 1,2,3,4,5 q(koniec)\n");
-  printf("d(debug 1) f(wszystkie)\n");
-  printf("aswz - kierunek ruchu\n");
+  printf("d(debug +/-) n(nastepny)\n");
+  printf("strzalki - kierunek ruchu\n");
   printf("\n");
-  if (idZwierz != -1)
-    Waz2Plik(poz);
+  if (selZwierz != -1)
+    PrintWazStats(poz);
 } // DrukujMape
 
 /*
@@ -1262,7 +1249,7 @@ int main(int argc, char* argv[])
   ileGen = 0;
   PusteTabele();
   ZapelnijMape();
-  DrukujMape(idZwierz);
+  DrukujMape();
   znak = getch(); // praca krokowa
   _next:
    PrzetworzMape();
@@ -1270,7 +1257,7 @@ int main(int argc, char* argv[])
   _pokaz: // tylko wyœwietl inaczej, bez przetwarzania
   if ((ileGen % czestoPokaz)==0)
     {
-    DrukujMape(idZwierz);
+    DrukujMape();
     znak = getch(); // praca krokowa
     kierunek = 0;
     if (znak==0)
@@ -1291,22 +1278,24 @@ int main(int argc, char* argv[])
     czestoPokaz = 10000;
   if (znak == 'd')
     {
-    if (idZwierz == -1)
-      idZwierz = listaZwierz[0].z_id; // nie by³o ¿adnego - to id pierwszego
+    if (debug == 0)
+      debug = 1;
+    else
+      debug = 0;
+    }
+  if (znak == 'n') // next
+    {
+    if (selZwierz == -1)
+      selZwierz = listaZwierz[0].z_id; // nie by³o ¿adnego - to id pierwszego
     else
       {
       short poz;
-      poz = Id2PozZwierz(idZwierz);
+      poz = Id2PozZwierz(selZwierz);
       poz++;
       if (poz >= ileZwierz)
         poz = 0;
-      idZwierz = listaZwierz[poz].z_id;
+      selZwierz = listaZwierz[poz].z_id;
       }
-    goto _pokaz;
-    }
-  if (znak == 'f')
-    {
-    idZwierz = -1; // znowu pokazuj wszystkie
     goto _pokaz;
     }
   if (znak == 'q')
