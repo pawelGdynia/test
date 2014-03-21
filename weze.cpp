@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <conio.h>
+#include <stdlib.h>
 #include <windows.h>
 
 // w których tabelach jest przechowywany opis obiektu
@@ -440,7 +441,7 @@ short losowe[24][4] = { // wszystkie mo¿liwe kolejnoœci dla 4 elementów
 void UstalRandom4(short* num4)
 {
   short a;
-  a = random(24); // wybierz - która kolejnoœæ z 24 zostanie u¿yta
+  a = rand() % 24; // wybierz - która kolejnoœæ z 24 zostanie u¿yta
 //  a = 1;
   num4[0] = losowe[a][0];
   num4[1] = losowe[a][1];
