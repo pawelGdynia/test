@@ -459,6 +459,23 @@ short GetPozZwierz(short x, short y)
 } // GetPozZwierz
 
 //---------------------------------------------------------------------------
+//! Któr¹ pozycjê w tabeli zajmuje zwierz?
+short CzyPunktLadowy(short x, short y)
+{
+  PUNKT_MAPY* ptrMapa;
+  OBIEKTINFO_GRUNT* ptrG;
+  DEF_GRUNT* ptrDef;
+
+  ptrMapa = PtrPunktMapy(x,y);
+  ptrG    = listaGrunt + ptrMapa->pm_grunt.pm1_poz;
+  ptrDef  = defGrunt + ptrG->g_def;
+  if (ptrDef->dg_blok)
+    return 0;
+  else
+    return 1;  
+} // CzyPunktLadowy
+
+//---------------------------------------------------------------------------
 //! Uniwersalna procedura sprawdzania czy roœlina jadalna
 short RoslinaJadalna(short x, short y)
 {
@@ -538,6 +555,9 @@ short WybierzFood(short x1, short y1, short* destX, short* destY, DEF_ZWIERZ* de
     tmpY = y1 + waz_y[ ruch ];
     if (CzyPunktZakres(tmpX, tmpY)==0) // punkt wyszed³ poza mapê, pomiñ go
       continue;
+    if (CzyPunktLadowy(tmpX, tmpY)==0) // czy mozna wejœæ na ten punkt
+      continue;
+
     if (a < 5 && CzyMapaZwierz(tmpX, tmpY)==0) // gdy miejsce wolne
       {
       wolneX = tmpX;
@@ -854,6 +874,9 @@ short WybierzManual(short poz, short x1, short y1, short* destX, short* destY, D
     return 0; // zakoñcz, nie mo¿na w t¹ stronê
   if (PunktWlasnyZwierz(ptrZ1, x1, y1))
     return 0; // sam zajmujê to pole
+  if (CzyPunktLadowy(x1, y1)==0) // czy mozna wejœæ na ten punkt
+    return 0;
+
   ptrMapa = PtrPunktMapy(x1, y1);
 
   // sprawdŸ czy na trasie jest zwierz do zjedzenia
