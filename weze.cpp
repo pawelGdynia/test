@@ -135,6 +135,8 @@ static short ileZwierz=0;
 static short maxZwierzId=0;
 static char  kierunek = ' '; //!< kierunek wklepany przez operatora
 static short idZwierz = 1;   //!< -1 oznacz wszystkie
+short WybranyKierunek(void);
+short PunktWlasnyZwierz(OBIEKTINFO_ZWIERZ* ptrZ1, short x, short y);
 //---------------------------------------------------------------------------
 //! Zwraca adres punktu na mapie, niezale¿nie od wewnêtrznej organizacji
 PUNKT_MAPY* PtrPunktMapy(short x, short y)
@@ -253,6 +255,9 @@ void ZapelnijMape(void)
 {
   short x,y;
 
+ DodajZwierz(3, 1, 1);
+ DodajZwierz(4, 1, 1);
+  
   for (x=0; x<xSize; x++)
     for (y=0; y<ySize; y++)
       {
@@ -265,9 +270,6 @@ void ZapelnijMape(void)
       if (x==y)
         DodajZwierz(x, y, 0); // gatunek "0"
       }
-// DodajZwierz(1, 1, 0);
- DodajZwierz(3, 1, 1);
- DodajZwierz(4, 1, 1);
 } // ZapelnijMape
 
 short losowe[24][4] = { // wszystkie mo¿liwe kolejnoœci dla 4 elementów
@@ -715,8 +717,67 @@ void TestMapy(void)
 } // TestMapy
 
 //---------------------------------------------------------------------------
+//! Przesuñ rêcznie zwierza, wg klawiatury
+short WybierzManual(short poz, short x1, short y1, short* destX, short* destY, DEF_ZWIERZ* defZ1)
+{
+  short typ = WybranyKierunek(); // ustal 1234
+  OBIEKTINFO_ZWIERZ* ptrZ1; // zwierz przetwarzany
+  PUNKT_MAPY* ptrMapa=NULL;
+
+  ptrZ1 = listaZwierz+poz;
+  *destX = x1;
+  *destY = y1;
+  switch (typ)
+    {
+    case 1: // góra
+      x1 +=  0;
+      y1 += -1;
+      break;
+
+    case 2: // lewo
+      x1 += -1;
+      y1 +=  0;
+      break;
+
+    case 3: // prawo
+      x1 += 1;
+      y1 += 0;
+      break;
+
+    case 4: // dó³
+      x1 += 0;
+      y1 += 1;
+      break;
+    }
+  if (CzyPunktZakres(x1, y1)==0) // punkt spoza mapy
+    return 0; // zakoñcz, nie mo¿na w t¹ stronê
+  if (PunktWlasnyZwierz(ptrZ1, x1, y1))
+    return 0; // sam zajmujê to pole
+  ptrMapa = PtrPunktMapy(x1, y1);
+
+  // sprawdŸ czy na trasie jest zwierz do zjedzenia
+  if (defZ1->dz_drapieznik // jestem drapie¿nikiem
+    && ptrMapa->pm_zwierz.pm1_tab == TAB_ZWIERZ) // jest do zjedzenia
+    {
+    *destX = x1;
+    *destY = y1;
+    return 2;
+    }
+  // sprawdŸ czy jest roœlina
+  if (CzyMapaZwierz(x1, y1) == 0) // czy miejsce jest wolne
+    {
+    *destX = x1; // na pewno tam idŸ
+    *destY = y1;
+    if (ptrMapa->pm_roslina.pm1_tab == TAB_ROSLINA
+      &&defZ1->dz_roslinozerca) // mogê to zjeœæ
+      return 1;
+    }
+  return 0; // bez zjadania
+} // WybierzManual
+
+//---------------------------------------------------------------------------
 // Przetwórz zwierzê z listy
-void ProcessZwierz(short poz)
+void ProcessZwierz(short poz, short manual)
 {
   short mapSrcX, mapSrcY;
   short mapDestX, mapDestY;
@@ -739,7 +800,10 @@ void ProcessZwierz(short poz)
   mapSrcY = ptrZ1->z_common.y;
 
   //=== 1.Ustal miejsce do którego ma siê przemieœciæ (oraz czy coœ zje)
-  zjedz  = WybierzFood(mapSrcX, mapSrcY, &mapDestX, &mapDestY, defZ1); // zwraca 1 lub 2
+  if (manual)
+    zjedz = WybierzManual(poz, mapSrcX, mapSrcY, &mapDestX, &mapDestY, defZ1); // zwraca 1 lub 2
+  else
+    zjedz = WybierzFood(mapSrcX, mapSrcY, &mapDestX, &mapDestY, defZ1); // zwraca 1 lub 2
 
   //=== najpierw zjedz obiekt w punkcie docelowym, potem tam siê przemieœæ
   if (zjedz)
@@ -801,8 +865,38 @@ void ProcessZwierz(short poz)
 
   if (ptrZ1->z_zapas <= 0)
     UsunMartwego(poz);
-  TestMapy();    
+  TestMapy();
 } // ProcessZwierz
+
+//---------------------------------------------------------------------------
+//! SprawdŸ czy wskazany punkt jest ju¿ zajêty przez tego zwierza
+short PunktWlasnyZwierz(OBIEKTINFO_ZWIERZ* ptrZ1, short x, short y)
+{
+  short a;
+  for (a=0; a<ptrZ1->z_size; a++)
+    if (ptrZ1->z_x[a] == x
+      &&ptrZ1->z_y[a] == y)
+      return 1; // tak, to w³asny punkt
+  return 0; // nie ma mnie tam
+} // PunktWlasnyZwierz
+
+//---------------------------------------------------------------------------
+//! Czy kierunek wybrany z rêki? 1234=tak, 0=nie
+short WybranyKierunek(void)
+{
+  switch (kierunek)
+    {
+    case 'w':
+      return 1; // góra
+    case 'a':
+      return 2; // lewo
+    case 's':
+      return 3; // prawo
+    case 'z':
+      return 4; // dó³
+    }
+  return 0; // ¿aden z nich
+} // WybranyKierunek
 
 //---------------------------------------------------------------------------
 //! Usuñ zw³oki z listy
@@ -840,44 +934,6 @@ void UsunMartwe(void)
 } // UsunMartwe
 
 //---------------------------------------------------------------------------
-//! Przesuñ rêcznie zwierza, wg
-void RuchManual(short poz)
-{
-  short typ = WybranyKierunek(); // ustal 1234
-  switch (typ)
-    {
-    case 1:
-      x +=  0;
-      y += -1;
-      break;
-
-    case 2:
-      x += -1;
-      y +=  0;
-      break;
-     .
-    }
-} // RuchManual
-
-//---------------------------------------------------------------------------
-//! Czy kierunek wybrany z rêki? 1234=tak, 0=nie
-short WybranyKierunek(void)
-{
-  switch (kierunek)
-    {
-    case 'w':
-      return 1; // góra
-    case 'a':
-      return 2; // lewo
-    case 's':
-      return 3; // prawo
-    case 'z':
-      return 4; // dó³
-    }
-  return 0; // ¿aden z nich
-} // WybranyKierunek
-
-//---------------------------------------------------------------------------
 //! Przetwarzanie obiektow o 1 jednostkê czasu
 void PrzetworzMape(void)
 {
@@ -895,15 +951,16 @@ void PrzetworzMape(void)
   max = ileZwierz; // ustal iloœæ przed - nowo dodane nie bêd¹ uwzglêdnione
   for (poz=0; poz<max; poz++)
     {
-    if (listaZwierz[poz].z_id == idZwierz // ten jest przetwarzany
-      &&WybranyKierunek() > 0)
-      RuchManual(poz);
-    else
-      ProcessZwierz(poz);
+    short manual=0;
+    if (listaZwierz[poz].z_id == idZwierz) // ten jest przetwarzany
+      {
+      if (WybranyKierunek() > 0)
+        manual = 1;
+      }
+    ProcessZwierz(poz, manual);
     }
   // usuñ martwe z listy
   UsunMartwe();
-
 } // PrzetworzMape
 
 //@} weze_przetwarzanie
@@ -1202,15 +1259,15 @@ int main(int argc, char* argv[])
   ZapelnijMape();
   DrukujMape(idZwierz);
   znak = getch(); // praca krokowa
-  kierunek = znak;
   _next:
-  PrzetworzMape();
+   PrzetworzMape();
 
   _pokaz: // tylko wyœwietl inaczej, bez przetwarzania
   if ((ileGen % czestoPokaz)==0)
     {
     DrukujMape(idZwierz);
     znak = getch(); // praca krokowa
+    kierunek = znak;    
     }
   SetTextColor(FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
   if (znak == '1')
