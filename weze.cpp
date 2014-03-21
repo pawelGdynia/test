@@ -21,26 +21,24 @@
 static PUNKT_MAPY mapa[X_SIZE][Y_SIZE];
 
 static DEF_GRUNT defGrunt[] = {
-  {1,0,0}, // ziemia rolna
-  {2,1,1}, // ocean
-  {3,0,1}  // pustynia
+  {0,0}, // 0, ziemia rolna
+  {1,1}, // 1, ocean
+  {0,1}  // 2, pustynia
   };
 #define ILE_DEFGRUNT (sizeof(defGrunt)/sizeof(defGrunt[0]))
 
 static DEF_ROSLINA defRoslina[] = {
-  {1, 9},
+  {9},
   };
 #define ILE_DEFROSLINA (sizeof(defRoslina)/sizeof(defRoslina[0]))
 
 static DEF_ZWIERZ defZwierz[] = {
-  {1, 10, 5, 0, 3},
+  {10, 5, 0, 3},
   };
 #define ILE_DEFZWIERZ (sizeof(defZwierz)/sizeof(defZwierz[0]))
 
 /* funkcje do zrobienia:
 - wype³nij mapê danymi z pliku txt
-- zrzut mapy na standard output
-  (ten sam format co input)
 */
 
 static short ileGen=0; // ile przebiegów
@@ -55,7 +53,7 @@ static short ileZwierz=0;
 //! Przygotuj 3 tabele na opisy obiektów
 void PusteTabele(void)
 {
-  ileGrunt  = 1;
+  ileGrunt  = 0;
   ileRoslin = 1;
   ileZwierz = 0;
   memset(listaGrunt,  0, sizeof(listaGrunt));
@@ -71,7 +69,7 @@ void PusteTabele(void)
 void DodajGrunt(short x, short y, short id)
 {
   // info w samej mapie
-  mapa[x][y].pm_grunt.pm1_typ = TYPOB_GRUNT;
+  mapa[x][y].pm_grunt.pm1_typ = TAB_GRUNT;
   mapa[x][y].pm_grunt.pm1_poz = ileGrunt;
 
   // info "systemowe"
@@ -80,7 +78,7 @@ void DodajGrunt(short x, short y, short id)
   listaGrunt[ileGrunt].oig_common.oic_po= 0; // nieprzetworzony
 
   // dok³adne info o obiekcie
-  listaGrunt[ileGrunt].oig_defid = id;
+  listaGrunt[ileGrunt].oig_defpoz = id;
   ileGrunt++;
 } // DodajGrunt
 
@@ -89,11 +87,11 @@ void DodajGrunt(short x, short y, short id)
 void DodajRosline(short x, short y, short id)
 {
   // info w samej mapie
-  mapa[x][y].pm_roslina.pm1_typ = TYPOB_ROSLINA;
+  mapa[x][y].pm_roslina.pm1_typ = TAB_ROSLINA;
   mapa[x][y].pm_roslina.pm1_poz = ileRoslin;
 
   // info "systemowe"
-  listaRoslin[ileRoslin].oir_defid = id;
+  listaRoslin[ileRoslin].oir_defpoz = id;
   listaRoslin[ileRoslin].oir_common.oic_x = x;
   listaRoslin[ileRoslin].oir_common.oic_y = y;
   listaRoslin[ileRoslin].oir_common.oic_po= 0; // nieprzetworzony
@@ -109,11 +107,11 @@ void DodajZwierz(short x, short y, short id)
 {
   ileZwierz++;
   // info w samej mapie
-  mapa[x][y].pm_zwierz.pm1_typ = TYPOB_ZWIERZ;
+  mapa[x][y].pm_zwierz.pm1_typ = TAB_ZWIERZ;
   mapa[x][y].pm_zwierz.pm1_poz = ileZwierz;
 
   // info "systemowe"
-  listaZwierz[ileZwierz].oiz_defid = id;
+  listaZwierz[ileZwierz].oiz_defpoz = id;
   listaZwierz[ileZwierz].oiz_common.oic_x = x;
   listaZwierz[ileZwierz].oiz_common.oic_y = y;
   listaZwierz[ileZwierz].oiz_common.oic_po= 0; // nieprzetworzony
@@ -132,15 +130,15 @@ void ZapelnijMape(void)
     for (y=0; y<Y_SIZE; y++)
       {
       // grunty rolne - wszêdzie uprawne
-      DodajGrunt(x, y, 1);
+      DodajGrunt(x, y, 0);
 
       // roœliny
       //if (y<7) // tylko kilka rz¹dków
-        DodajRosline(x, y, 1);
+        DodajRosline(x, y, 0);
       }
-  DodajZwierz(1, 1, 1);
-  DodajZwierz(2, 2, 1);
-  DodajZwierz(3, 3, 1);
+  DodajZwierz(1, 1, 0);
+  DodajZwierz(2, 2, 0);
+  DodajZwierz(3, 3, 0);
 } // ZapelnijMape
 
 short losowe[24][4] = { // wszystkie mo¿liwe kolejnoœci dla 4 elementów
@@ -174,19 +172,6 @@ short PunktZakres(short x, short y)
 } // PunktZakres
 
 //---------------------------------------------------------------------------
-//! Szuka w tabeli pozycji na której jest definicja "typ"
-short SzukajRoslinaDef(short typ)
-{
-  short a;
-
-  for (a=0; a<ILE_DEFROSLINA; a++)
-    if (defRoslina[a].defr_id==typ)
-      return a;
-
-  return -1; // nie znaleziono
-} // SzukajRoslinaDef
-
-//---------------------------------------------------------------------------
 //! Uniwersalna procedura sprawdzania czy roœlina jadalna
 short RoslinaJadalna(short x, short y)
 {
@@ -195,7 +180,7 @@ short RoslinaJadalna(short x, short y)
 
   poz = mapa[x][y].pm_roslina.pm1_poz; // która roœlina z listy
   poziomAkt = listaRoslin[poz].oir_poziom;
-  ktoraDef = SzukajRoslinaDef(listaRoslin[poz].oir_defid);
+  ktoraDef = listaRoslin[poz].oir_defpoz;
   maxPoziomDef = defRoslina[ktoraDef].defr_czasWzrostu; // poziom maksymalny z defincji
 
   if (poziomAkt == maxPoziomDef)
@@ -323,7 +308,7 @@ void PrzetworzMape(void)
 
   // zwierzêta
   for (poz=1; poz<=ileZwierz; poz++)
-    if (listaZwierz[poz].oiz_defid > 0) // pomijaj martwe
+    if (listaZwierz[poz].oiz_defpoz >= 0) // pomijaj martwe
       {
       mapX = listaZwierz[poz].oiz_common.oic_x;
       mapY = listaZwierz[poz].oiz_common.oic_y;
@@ -367,14 +352,14 @@ void PrzetworzMape(void)
         mapa[mapX][mapY].pm_zwierz.pm1_poz = 0;
 
         // 2.oznakuj w tabeli jako martwy
-        listaZwierz[poz].oiz_defid = 0;
+        listaZwierz[poz].oiz_defpoz = -1;
         }
       // rozmna¿anie
       if (listaZwierz[poz].oiz_zapas >=20) // s¹ nadwy¿ki do wydania
         {
         short ok;
         short destX2, destY2;
-        
+
         ok = WybierzDlaNowego(destX, destY, &destX2, &destY2);
         if (ok)
           {
@@ -386,7 +371,7 @@ void PrzetworzMape(void)
 
   // usuñ martwe z listy
   for (poz=ileZwierz; poz>0; poz--)
-    if (listaZwierz[poz].oiz_defid == 0) // do usuniêcia
+    if (listaZwierz[poz].oiz_defpoz == -1) // do usuniêcia
       {
       if (ileZwierz != poz) // to nie jest ostatni
         memmove(listaZwierz+poz, listaZwierz+poz+1, sizeof(listaZwierz[0])*(ileZwierz-poz));

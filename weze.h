@@ -2,9 +2,10 @@
 //  Zlote wê¿e: struktury danych
 // -----------------------------
 
-#define TYPOB_GRUNT   1
-#define TYPOB_ROSLINA 2
-#define TYPOB_ZWIERZ  3
+// w których tabelach jest przechowywany opis obiektu
+#define TAB_GRUNT   1
+#define TAB_ROSLINA 2
+#define TAB_ZWIERZ  3
 
 typedef struct
   {
@@ -26,15 +27,15 @@ typedef struct
 // W³aœciwoœci WSPÓLNE
 typedef struct
   {
-  short oic_x;  // wspó³rzêdna x
-  short oic_y;  // wspó³rzêdna y
+  short oic_x;  // wspó³rzêdna x na mapie
+  short oic_y;  // wspó³rzêdna y na mapie
   short oic_po; // czy po przetworzeniu
   } OBIEKTINFO_COMMON;
 
 //=== GRUNTY
 typedef struct // info wspólne dla wszystkich wyst¹pieñ
   {
-  short defg_id;   // identyfikator
+//  short defg_id;   // identyfikator
 
   short defg_blok; // miejsce niedostêpne - ani roœlin ani zwierz¹t
   short defg_dead; // miejsce martwe - bez roœlin, ale dostêpne dla zwierz¹t
@@ -42,7 +43,7 @@ typedef struct // info wspólne dla wszystkich wyst¹pieñ
 
 typedef struct // info dla jednego punktu
   {
-  short oig_defid;              // która definicja w³aœciwoœci
+  short oig_defpoz;              // która definicja w³aœciwoœci
   OBIEKTINFO_COMMON oig_common; // informacje bazowe, systemowe
 
   // dane indywidualne obiektu: brak
@@ -51,14 +52,14 @@ typedef struct // info dla jednego punktu
 //== ROŒLINY
 typedef struct // info wspólne dla wszystkich wyst¹pieñ
   {
-  short defr_id;   // identyfikator
+//  short defr_id;   // identyfikator
 
   short defr_czasWzrostu; // max poziom, ile okresów na pe³ny wzrost od zera
   } DEF_ROSLINA;
 
 typedef struct
   {
-  short oir_defid; // która definicja w³aœciwoœci
+  short oir_defpoz; // która definicja w³aœciwoœci
   OBIEKTINFO_COMMON oir_common; // informacje bazowe, systemowe
 
   // dane indywidualne obiektu
@@ -68,7 +69,7 @@ typedef struct
 //=== ZWIERZÊTA
 typedef struct // info wspólne dla wszystkich wyst¹pieñ
   {
-  short defz_id;   // identyfikator
+//  short defz_id;   // identyfikator
 
   short defz_maxModul;  // do ilu modu³ów mo¿e rosn¹æ
   short defz_maxZapas;  // ile zasobow (trawy) mo¿e przechowaæ
@@ -78,7 +79,7 @@ typedef struct // info wspólne dla wszystkich wyst¹pieñ
 
 typedef struct
   {
-  short oiz_defid; // która definicja w³aœciwoœci
+  short oiz_defpoz; // która definicja w³aœciwoœci
   OBIEKTINFO_COMMON oiz_common; // informacje bazowe, systemowe
 
   // dane indywidualne obiektu
