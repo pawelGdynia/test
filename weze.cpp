@@ -93,6 +93,7 @@ void DodajRosline(short x, short y, short id)
   mapa[x][y].pm_roslina.pm1_poz = ileRoslin;
 
   // info "systemowe"
+  listaRoslin[ileRoslin].oir_defid = id;
   listaRoslin[ileRoslin].oir_common.oic_x = x;
   listaRoslin[ileRoslin].oir_common.oic_y = y;
   listaRoslin[ileRoslin].oir_common.oic_po= 0; // nieprzetworzony
@@ -162,27 +163,42 @@ void UstalRandom4(short* num4)
 
 //---------------------------------------------------------------------------
 //! Pobierz poziom wzrostu roœliny o zadanych wspó³rzêdnych
-short StanRosliny(short x, short y)
+short PunktZakres(short x, short y)
 {
-  short poz;
-
   if (x < 0
     ||y < 0
     ||x >= X_SIZE
     ||y >= Y_SIZE)
     return 0; // poza zakresem - tam nic nie ma!
+  return 1; // ok  
+} // PunktZakres
 
-  poz = mapa[x][y].pm_roslina.pm1_poz;
-  if (poz <= 0)
-    return 0; // tam nie ma roœliny!
-  return listaRoslin[poz].oir_poziom;
-} // StanRosliny
+//---------------------------------------------------------------------------
+//! Szuka w tabeli pozycji na której jest definicja "typ"
+short SzukajRoslinaDef(short typ)
+{
+  short a;
+
+  for (a=0; a<ILE_DEFROSLINA; a++)
+    if (defRoslina[a].defr_id==typ)
+      return a;
+
+  return -1; // nie znaleziono
+} // SzukajRoslinaDef
 
 //---------------------------------------------------------------------------
 //! Uniwersalna procedura sprawdzania czy roœlina jadalna
-short RoslinaJadalna(short poziom)
+short RoslinaJadalna(short x, short y)
 {
-  if (poziom==9)
+  short poz, ktoraDef;
+  short poziomAkt, maxPoziomDef;
+
+  poz = mapa[x][y].pm_roslina.pm1_poz; // która roœlina z listy
+  poziomAkt = listaRoslin[poz].oir_poziom;
+  ktoraDef = SzukajRoslinaDef(listaRoslin[poz].oir_defid);
+  maxPoziomDef = defRoslina[ktoraDef].defr_czasWzrostu; // poziom maksymalny z defincji
+
+  if (poziomAkt == maxPoziomDef)
     return 1; // tylko maksymalne s¹ jadalne
 
   return 0;
@@ -192,14 +208,13 @@ short RoslinaJadalna(short poziom)
 //! Wybierz z s¹siedztwa miejsce do zjedzenia, wynik=1 oznacza ¿e wybrano
 short WybierzFood(short x1, short y1, short* destX, short* destY)
 {
-  short a, stan;
+  short a;
   short kolej[4];
 
   UstalRandom4(kolej);
 
   // najpierw punkt bie¿¹cego pobytu
-  stan = StanRosliny(x1, y1);
-  if (RoslinaJadalna(stan))
+  if (RoslinaJadalna(x1, y1))
     {
     *destX = x1;
     *destY = y1;
@@ -231,10 +246,12 @@ short WybierzFood(short x1, short y1, short* destX, short* destY)
         *destY = y1;
         break;
       }
-    stan = StanRosliny(*destX, *destY);
-    if (mapa[*destX][*destY].pm_zwierz.pm1_typ == 0) // miejsce jest wolne
-      if (RoslinaJadalna(stan))
-        return 1; // wybierz ten punkt
+    if (PunktZakres(*destX, *destY))
+      {
+      if (mapa[*destX][*destY].pm_zwierz.pm1_typ == 0) // miejsce jest wolne
+        if (RoslinaJadalna(*destX, *destY))
+          return 1; // wybierz ten punkt
+      }
     }
 
   // zostañ tam gdzie jesteœ
@@ -242,6 +259,7 @@ short WybierzFood(short x1, short y1, short* destX, short* destY)
   *destY = y1;
   return 0; // nie ma nic jadalnego w okolicy
 } // WybierzFood
+
 //---------------------------------------------------------------------------
 //! Wybierz z s¹siedztwa miejsce do umieszczenia noworodka (wynik=1 to zgoda)
 short WybierzDlaNowego(short x1, short y1, short* destX, short* destY)
@@ -275,8 +293,9 @@ short WybierzDlaNowego(short x1, short y1, short* destX, short* destY)
         *destY = y1;
         break;
       }
-    if (mapa[*destX][*destY].pm_zwierz.pm1_typ == 0) // miejsce jest wolne
-      return 1; // wybierz ten punkt
+    if (PunktZakres(*destX, *destY))
+      if (mapa[*destX][*destY].pm_zwierz.pm1_typ == 0) // miejsce jest wolne
+        return 1; // wybierz ten punkt
     }
 
   return 0; // nie mam miejsca
@@ -421,7 +440,7 @@ void DrukujZnakMapy(short x, short y)
   if (poz > 0)
     {
     znak[0] = '0' + listaRoslin[poz].oir_poziom;
-    if (RoslinaJadalna(listaRoslin[poz].oir_poziom))
+    if (RoslinaJadalna(x,y))
       {
       SetTextColor(FOREGROUND_RED | FOREGROUND_GREEN /*| FOREGROUND_INTENSITY*/);
       znak[0] = 'o';
