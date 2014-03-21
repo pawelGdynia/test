@@ -26,6 +26,8 @@ typedef struct
   PUNKT_MAPY1 pm_grunt;
   PUNKT_MAPY1 pm_roslina;
   PUNKT_MAPY1 pm_zwierz;
+  short x; // do pomocy przy debuggowaniu
+  short y;
   } PUNKT_MAPY;
 
 // W³aœciwoœci WSPÓLNE
@@ -256,12 +258,18 @@ void ZapelnijMape(void)
 {
   short x,y;
 
- DodajZwierz(3, 1, 1);
- DodajZwierz(4, 1, 1);
-  
+  PUNKT_MAPY* ptr;
+
+
+  DodajZwierz(3, 1, 1);
+  DodajZwierz(4, 1, 1);
+
   for (x=0; x<xSize; x++)
     for (y=0; y<ySize; y++)
       {
+      ptr = PtrPunktMapy(x,y);
+      ptr->x = x;
+      ptr->y = y;      
       // grunty rolne - wszêdzie uprawne (typ 0)
       DodajGrunt(x, y, 0);
 
