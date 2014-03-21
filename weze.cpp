@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <conio.h>
+#include <windows.h>
 
 #include "weze.h"
 
@@ -271,7 +272,8 @@ void PrzetworzMape(void)
         poz2 = mapa[destX][destY].pm_roslina.pm1_poz;
         if (poz2 > 0) // jest trawa w tabeli
           listaRoslin[poz2].oir_poziom = 0;
-        listaZwierz[poz].oiz_zapas += 2;          
+        if (listaZwierz[poz].oiz_zapas < 20)
+          listaZwierz[poz].oiz_zapas += 2;
         }
       //=== zmniejsz zapas
       if (listaZwierz[poz].oiz_zapas > 0)
@@ -296,6 +298,24 @@ void PrzetworzMape(void)
       }
 } // PrzetworzMape
 
+static HANDLE hStdOut;
+//static CONSOLE_SCREEN_BUFFER_INFO csbi;
+
+//---------------------------------------------------------------------------
+//! Ustaw kolor tekstu - kolor zdefiniowany w windows.h
+void SetTextColor(short kolor)
+{
+  SetConsoleTextAttribute(hStdOut, kolor);
+} // SetTextColor
+
+//---------------------------------------------------------------------------
+//! Drukuj tekst wg bie¿¹cego atrybutu
+void PutZnak(char* znak)
+{
+  unsigned long count;
+  WriteConsole(hStdOut, znak, 1, &count, NULL);
+} // PutZnak
+
 //---------------------------------------------------------------------------
 //! Zamieñ punkt mapy na literkê do wydruku
 void DrukujZnakMapy(short x, short y)
@@ -306,19 +326,25 @@ void DrukujZnakMapy(short x, short y)
   // grunt
   poz = mapa[x][y].pm_grunt.pm1_poz;
   if (poz > 0)
+    {
+    SetTextColor(FOREGROUND_BLUE);
     strcpy(znak, ".");
-
+    }
   // roœliny
   poz = mapa[x][y].pm_roslina.pm1_poz;
   if (poz > 0)
+    {
     znak[0] = '0' + listaRoslin[poz].oir_poziom;
-
+    SetTextColor(FOREGROUND_GREEN);
+    }
   // zwierzeta
   poz = mapa[x][y].pm_zwierz.pm1_poz;
   if (poz > 0)
+    {
     znak[0] = 'A' + listaZwierz[poz].oiz_zapas -1;
-
-  printf(znak);
+    SetTextColor(FOREGROUND_RED);
+    }
+  PutZnak(znak);
 } // DrukujZnakMapy
 
 //---------------------------------------------------------------------------
@@ -326,6 +352,7 @@ void DrukujZnakMapy(short x, short y)
 void DrukujMape(void)
 {
   short x, y;
+  clrscr();
   printf("====== MAPA nr: %u ===\n", ileGen);
   for (y=0; y<Y_SIZE; y++)
     {
@@ -333,7 +360,7 @@ void DrukujMape(void)
       DrukujZnakMapy(x,y);
     printf("\n"); // koniec linii
     }
-  printf("\n");    
+  printf("\n");
 } // DrukujMape
 
 //---------------------------------------------------------------------------
@@ -341,19 +368,24 @@ void DrukujMape(void)
 #pragma argsused
 int main(int argc, char* argv[])
 {
-  short a;
-
+  short a, znak;
+  hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
+  SetTextColor(FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
   printf("WEZE 1.0");
   printf("\n");
 
   ileGen = 0;
   PusteTabele();
   ZapelnijMape();
-  for (a=0; a<10; a++)
-    {
-    PrzetworzMape();
-    DrukujMape();
-    }
+  _next:
+  PrzetworzMape();
+  DrukujMape();
+  znak = getch();
+  SetTextColor(FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
+  if (znak == 'q')
+    return 0;
+  goto _next;
+
   return 0;
 } // main
 
