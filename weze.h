@@ -9,7 +9,7 @@
 
 typedef struct
   {
-  short pm1_typ; // TYPOB_*: w której tabeli obiektów znajduje siê opis
+  short pm1_tab; // TAB_*: w której tabeli obiektów znajduje siê opis
   short pm1_poz; // pozycja w tabeli dla wskazanego typu 
   } PUNKT_MAPY1;
 
@@ -35,8 +35,6 @@ typedef struct
 //=== GRUNTY
 typedef struct // info wspólne dla wszystkich wyst¹pieñ
   {
-//  short defg_id;   // identyfikator
-
   short defg_blok; // miejsce niedostêpne - ani roœlin ani zwierz¹t
   short defg_dead; // miejsce martwe - bez roœlin, ale dostêpne dla zwierz¹t
   } DEF_GRUNT;
@@ -52,8 +50,6 @@ typedef struct // info dla jednego punktu
 //== ROŒLINY
 typedef struct // info wspólne dla wszystkich wyst¹pieñ
   {
-//  short defr_id;   // identyfikator
-
   short defr_czasWzrostu; // max poziom, ile okresów na pe³ny wzrost od zera
   } DEF_ROSLINA;
 
@@ -69,8 +65,6 @@ typedef struct
 //=== ZWIERZÊTA
 typedef struct // info wspólne dla wszystkich wyst¹pieñ
   {
-//  short defz_id;   // identyfikator
-
   short defz_maxModul;  // do ilu modu³ów mo¿e rosn¹æ
   short defz_maxZapas;  // ile zasobow (trawy) mo¿e przechowaæ
   short defz_zapNowyMod;// ile zasobów ¿ywnoœci trzeba na wzrost o 1 modu³
