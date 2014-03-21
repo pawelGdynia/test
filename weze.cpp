@@ -8,9 +8,92 @@
 #include <conio.h>
 #include <windows.h>
 
-#include "weze.h"
+//#include "weze.h"
 
 
+  // w których tabelach jest przechowywany opis obiektu
+#define TAB_GRUNT   1
+#define TAB_ROSLINA 2
+#define TAB_ZWIERZ  3
+
+#define MAX_SIZE 15
+typedef struct
+  {
+  short pm1_tab; // TAB_*: w której tabeli obiektów znajduje siê opis
+  short pm1_poz; // pozycja w tabeli dla wskazanego typu
+  } PUNKT_MAPY1;
+
+// dane 1 punktu na mapie
+typedef struct
+  {
+  PUNKT_MAPY1 pm_grunt;
+  PUNKT_MAPY1 pm_roslina;
+  PUNKT_MAPY1 pm_zwierz;
+  } PUNKT_MAPY;
+
+// W³aœciwoœci WSPÓLNE
+typedef struct
+  {
+  short x;  // wspó³rzêdna x na mapie (g³owa dla zwierza)
+  short y;  // wspó³rzêdna y na mapie
+  short po; // czy po przetworzeniu
+  } OBIEKTINFO_COMMON;
+
+//=== GRUNTY ===============================================================
+typedef struct // info wspólne dla wszystkich wyst¹pieñ
+  {
+  short dg_blok; // miejsce niedostêpne - ani roœlin ani zwierz¹t
+  short dg_dead; // miejsce martwe - bez roœlin, ale dostêpne dla zwierz¹t
+  } DEF_GRUNT;
+
+typedef struct // info dla jednego punktu
+  {
+  short g_def;              // która definicja w³aœciwoœci
+  OBIEKTINFO_COMMON g_common; // informacje bazowe, systemowe
+
+  // dane indywidualne obiektu: brak
+  } OBIEKTINFO_GRUNT;
+
+//== ROŒLINY ===============================================================
+typedef struct // info wspólne dla wszystkich wyst¹pieñ
+  {
+  short dr_czasWzrostu; // max poziom, ile okresów na pe³ny wzrost od zera
+  short dr_kalorie;     // ile punktów zyskuje zjadaj¹cy
+  } DEF_ROSLINA;
+
+typedef struct
+  {
+  short r_def; // która definicja w³aœciwoœci
+  OBIEKTINFO_COMMON r_common; // informacje bazowe, systemowe
+
+  // dane indywidualne obiektu
+  short r_poziom; // bie¿acy poziom wzrostu - max to defr_czasWzrostu
+  } OBIEKTINFO_ROSLINA;
+
+//=== ZWIERZÊTA ============================================================
+typedef struct // info wspólne dla wszystkich wyst¹pieñ
+  {
+  short dz_maxZapas;  // ile zasobow (trawy) mo¿e przechowaæ
+  short dz_roslinozerca;
+  short dz_drapieznik;
+  short dz_kalorie;    // ile punktow daje zjedzenie go
+  short defz_maxSize;  // do ilu modu³ów mo¿e rosn¹æ
+
+  //short defz_zapNowyMod;// ile zasobów ¿ywnoœci trzeba na wzrost o 1 modu³
+  //short defz_zasieg;    // zasiêg widocznoœci - do analizy
+  } DEF_ZWIERZ;
+
+typedef struct
+  {
+  short z_def; // która definicja w³aœciwoœci
+  OBIEKTINFO_COMMON z_common; // informacje bazowe, systemowe
+
+  // dane indywidualne obiektu
+  short z_zapas;  // bie¿acy poziom zapasu ¿ywnoœci
+  short z_x[MAX_SIZE+1];// wspó³rzêdne wszystkich segmentów
+  short z_y[MAX_SIZE+1];
+  short z_size;
+  } OBIEKTINFO_ZWIERZ;
 
 
 //   @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -18,8 +101,8 @@
 //!  Alogorytmy przetwarzania obiektów i mapy
 //@{ @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
-static short xSize = 50;
-static short ySize = 50;
+static short xSize = 60;
+static short ySize = 18;
 
 static PUNKT_MAPY* mapa;
 static DEF_GRUNT defGrunt[] = {
@@ -35,8 +118,8 @@ static DEF_ROSLINA defRoslina[] = {
 #define ILE_DEFROSLINA (sizeof(defRoslina)/sizeof(defRoslina[0]))
 
 static DEF_ZWIERZ defZwierz[] = {
-  {10, 1, 0, 3}, // 0: roœlino¿erca
-  {10, 1, 1, 3}, // 1: drapie¿nik
+  {10, 1, 0, 3, 10}, // 0: roœlino¿erca
+  {10, 1, 1, 3, 10}, // 1: drapie¿nik
   };
 #define ILE_DEFZWIERZ (sizeof(defZwierz)/sizeof(defZwierz[0]))
 
@@ -175,10 +258,11 @@ void ZapelnijMape(void)
       // roœliny
       //if (y%2) // tylko kilka rz¹dków roœliny zwyk³ej (typ 0)
         DodajRosline(x, y, 0);
-      //if (x==y)
-      //  DodajZwierz(x, y, 0); // gatunek "0"
+      if (x==y)
+        DodajZwierz(x, y, 0); // gatunek "0"
       }
- DodajZwierz(1, 1, 0);
+// DodajZwierz(1, 1, 0);
+ DodajZwierz(7, 8, 1);
 } // ZapelnijMape
 
 short losowe[24][4] = { // wszystkie mo¿liwe kolejnoœci dla 4 elementów
@@ -291,8 +375,8 @@ short WybierzFood(short x1, short y1, short* destX, short* destY, DEF_ZWIERZ* de
 {
   short a;
   short kolej[4];
-  short lastX=x1;
-  short lastY=y1;
+//  short lastX=x1;
+//  short lastY=y1;
 
   UstalRandom4(kolej);
   // w losowej kolejnoœci - sprawdŸ punkty s¹siednie
@@ -332,8 +416,8 @@ short WybierzFood(short x1, short y1, short* destX, short* destY, DEF_ZWIERZ* de
         if (def->dz_roslinozerca
           &&CzyMapaZwierz(*destX, *destY)==0)
           {
-          lastX = *destX;
-          lastY = *destY;
+          //lastX = *destX;
+          //lastY = *destY;
           if (RoslinaJadalna(*destX, *destY))
             return 1; // wybierz ten punkt
           }
@@ -350,8 +434,8 @@ short WybierzFood(short x1, short y1, short* destX, short* destY, DEF_ZWIERZ* de
     }
 
   // przyjmij inny punkt w otoczeniu - wolny
-  *destX = lastX;
-  *destY = lastY;
+//  *destX = lastX;
+//  *destY = lastY;
   return 0; // nie ma nic jadalnego w okolicy
 } // WybierzFood
 
@@ -801,9 +885,10 @@ void DrukujZnakMapy(short x, short y)
   // zwierzeta
   if (CzyMapaZwierz(x,y)) // jest zwierz w tabeli
     {
+    poz = ptr->pm_zwierz.pm1_poz;    
     znak[0] = ZnakWeza(x,y);
     if (listaZwierz[poz].z_def == 0)
-      SetTextColor(FOREGROUND_RED);
+      SetTextColor(FOREGROUND_BLUE);
     else // 2
       SetTextColor(FOREGROUND_RED);
     }
