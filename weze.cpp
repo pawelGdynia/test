@@ -8,10 +8,7 @@
 #include <conio.h>
 #include <windows.h>
 
-//#include "weze.h"
-
-
-  // w których tabelach jest przechowywany opis obiektu
+// w których tabelach jest przechowywany opis obiektu
 #define TAB_GRUNT   1
 #define TAB_ROSLINA 2
 #define TAB_ZWIERZ  3
@@ -79,11 +76,13 @@ typedef struct // info wspólne dla wszystkich wyst¹pieñ
   short dz_kalorie;    // ile punktow daje zjedzenie go
   short dz_maxSize;    // do ilu modu³ów mo¿e rosn¹æ
   short dz_utrata;     // ile zasobów ubywa dla nowego modu³u lub potomka
+  short dz_zasieg;     // jak daleko widzi aby analizowaæ sytuacjê (0,1,2)
   } DEF_ZWIERZ;
 
 static DEF_ZWIERZ defZwierz[] = {
-  {1, 0, 10, 10, 10, 5}, // 1,0: roœlino¿erca
-  {0, 1, 20, 10, 10, 5}, // 0,1: drapie¿nik
+// Rosl Drap Zapas Kalorie  maxSize Utrata Zasieg
+  {1,   0,     10,      20,      10,     5,    1},
+  {0,   1,     20,      10,      10,     5,    1},
   };
 #define ILE_DEFZWIERZ (sizeof(defZwierz)/sizeof(defZwierz[0]))
 
@@ -97,6 +96,7 @@ typedef struct
   short z_x[MAX_SIZE+1];// wspó³rzêdne wszystkich segmentów
   short z_y[MAX_SIZE+1];
   short z_size;
+  short z_id; // unikalny numer
   } OBIEKTINFO_ZWIERZ;
 
 //   @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -104,8 +104,8 @@ typedef struct
 //!  Alogorytmy przetwarzania obiektów i mapy
 //@{ @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
-static short xSize = 77;
-static short ySize = 21;
+static short xSize = 12;
+static short ySize = 12;
 
 static PUNKT_MAPY* mapa;
 static DEF_GRUNT defGrunt[] = {
@@ -132,7 +132,7 @@ static OBIEKTINFO_ZWIERZ*  listaZwierz;
 static short ileGrunt =0;
 static short ileRoslin=0;
 static short ileZwierz=0;
-
+static short maxZwierzId=0;
 //---------------------------------------------------------------------------
 //! Zwraca adres punktu na mapie, niezale¿nie od wewnêtrznej organizacji
 PUNKT_MAPY* PtrPunktMapy(short x, short y)
@@ -237,6 +237,11 @@ void DodajZwierz(short x, short y, short id)
   ptrZ->z_x[0] = x;
   ptrZ->z_y[0] = y;
   ptrZ->z_size = 1;
+
+  maxZwierzId++;
+  if (maxZwierzId > 9999)
+    maxZwierzId = 1;
+  ptrZ->z_id = maxZwierzId;
   ileZwierz++;
 } // DodajZwierz
 
@@ -255,7 +260,7 @@ void ZapelnijMape(void)
       // roœliny
       //if (y%2) // tylko kilka rz¹dków roœliny zwyk³ej (typ 0)
         DodajRosline(x, y, 0);
-      if (x==y)
+      if (x==y && x < 3)
         DodajZwierz(x, y, 0); // gatunek "0"
       }
 // DodajZwierz(1, 1, 0);
@@ -273,8 +278,8 @@ short losowe[24][4] = { // wszystkie mo¿liwe kolejnoœci dla 4 elementów
 void UstalRandom4(short* num4)
 {
   short a;
-  a = random(24); // wybierz - która kolejnoœæ z 24 zostanie u¿yta
-//  a = 11;
+//  a = random(24); // wybierz - która kolejnoœæ z 24 zostanie u¿yta
+  a = 1;
   num4[0] = losowe[a][0];
   num4[1] = losowe[a][1];
   num4[2] = losowe[a][2];
@@ -369,76 +374,123 @@ short RoslinaJadalna(short x, short y)
 
   return 0;
 } // RoslinaJadalna
+                       // 0   1  2  3  4   5  6  7  8   9 10 11 12
+static short waz_x[]   = {0,  0, 1, 0,-1, -1, 1, 1,-1,  0, 2, 0,-2};
+static short waz_y[]   = {0, -1, 0, 1, 0, -1,-1, 1, 1, -2, 0, 2, 0};
+static short waz_posr1[]={0,  1, 2, 3, 4,  1, 2, 3, 4,  1, 2, 3, 4};
+static short waz_posr2[]={0,  0, 0, 0, 0,  4, 1, 2, 3,  0, 0, 0, 0}; // droga alternatywn
+static short ilePkt[]   = {1,5,9,13}; // ile punktów sprawdzaæ zale¿nie od zasiêgu
 
+//---------------------------------------------------------------------------
+// Ustal kolejnoœæ sprawdzania s¹siednich punktów
+void Random2Ktore(short* kolej, short* ktore)
+{
+  short a;
+  ktore[0] = 0;
+  for (a=0; a<4; a++)
+    {
+    ktore[a+1+0] = kolej[a]+0; // wymieszaj w ramach czwórki 1-4
+    ktore[a+1+4] = kolej[a]+4; // wymieszaj w ramach czwórki 5-8
+    ktore[a+1+8] = kolej[a]+8; // wymieszaj w ramach czwórki 9-12
+    }
+} // Random2Ktore
+
+//---------------------------------------------------------------------------
+//! Wykonaj sprawdzanie dla podanego punktu s¹siedniego
+/*short SprawdzPunktSasiedni(short x1, short y1)
+{
+  return 0;
+} // SprawdzPunktSasiedni
+*/
 //---------------------------------------------------------------------------
 //! Wybierz z s¹siedztwa miejsce do zjedzenia, wynik=1 oznacza ¿e wybrano
 short WybierzFood(short x1, short y1, short* destX, short* destY, DEF_ZWIERZ* def)
 {
   short a;
-  short kolej[4];
-  short lastX=x1;
-  short lastY=y1;
+  short kolej[4];  // wynik z random
+  short ktore[13]; // kolejnoœæ sprawdzania
+  short tmpX; // tymczasowe
+  short tmpY;
 
-  UstalRandom4(kolej);
+  short bestX = -1; // ruch do wykonania w kierunku jedzenia
+  short bestY = -1;
+
+  short wolneX = x1; // proponowany punkt gdy nie ma lepszej propozycji
+  short wolneY = y1;
+
+  short zasieg = def->dz_zasieg;
+  short ile = ilePkt[zasieg]; // ile punktów z tabeli sprawdzaæ
+
+  UstalRandom4(kolej); // => kolej[4]
+  Random2Ktore(kolej, ktore); // ustal kolejnoœæ w ktore[] wed³ug kolej[4]
+
   // w losowej kolejnoœci - sprawdŸ punkty s¹siednie
-  for (a=0; a<4; a++)
+  for (a=0; a<ile; a++)
     {
-    switch (kolej[a])
+    tmpX = x1 + waz_x[ ktore[a] ];
+    tmpY = y1 + waz_y[ ktore[a] ];
+    if (CzyPunktZakres(tmpX, tmpY)==0) // punkt wyszed³ poza mapê, pomiñ go
+      continue;
+    if (a < 5)
       {
-      case 1: // na górze
-        *destX = x1;
-        *destY = y1-1;
-        break;
-
-      case 2: // z prawej
-        *destX = x1+1;
-        *destY = y1;
-        break;
-
-      case 3: // na dole
-        *destX = x1;
-        *destY = y1+1;
-        break;
-
-      case 4: // z lewej
-        *destX = x1-1;
-        *destY = y1;
-        break;
+      wolneX = tmpX;
+      wolneY = tmpY;
       }
-    if (CzyPunktZakres(*destX, *destY)) // punkt nie wyszed³ poza mapê
+    if (def->dz_drapieznik) // jestem drapie¿nikiem
       {
-      if (def->dz_drapieznik) // jestem drapie¿nikiem
+      if (CzyMapaZwierz(tmpX, tmpY)==1) // roœlino¿erca (1) w punkcie docelowym
         {
-        if (CzyMapaZwierz(*destX, *destY)==1) // roœlino¿erca (1) w punkcie docelowym
-          return 2; // zjedz go!
-        }
-
-      if (def->dz_roslinozerca) // jestem roœlino¿erc¹
-        if (CzyMapaZwierz(*destX, *destY)==0) // nie ma tam zwierza
+        if (a < 5) // jest blisko, mo¿na go zjeœæ
           {
-          if (RoslinaJadalna(*destX, *destY))
-            return 1; // wybierz ten punkt
+          *destX = tmpX;
+          *destY = tmpY;
+          return 2; // zjedz go!
           }
-      if (CzyMapaZwierz(*destX, *destY)==0) // nie ma tam ¿adnego zwierza
-        {
-        // pamiêtaj jako ostatnio sprawdzany dobry punkt 
-        lastX = *destX;
-        lastY = *destY;
+        else // jest dalej, idŸ w jego kierunku
+          {
+          if (bestX == -1) // nie by³o wczeœniej takiej sytuacji
+            {
+            bestX = tmpX;
+            bestY = tmpY;
+            }
+          }
         }
       }
-    }
-  // Nie by³o decyzji wczeœniej, sprawdŸ czy w punkcie bie¿¹cym jest roœlina
-  if (def->dz_roslinozerca
-    &&RoslinaJadalna(x1, y1))
-    {
-    *destX = x1;
-    *destY = y1;
-    return 1;
+
+    if (def->dz_roslinozerca) // jestem roœlino¿erc¹
+      if (CzyMapaZwierz(tmpX, tmpY)==0) // nie ma tam zwierza
+        {
+        if (RoslinaJadalna(tmpX, tmpY))
+          {
+          if (a < 5)
+            {
+            *destX = tmpX;
+            *destY = tmpY;
+            return 1; // zjedz roœlinê
+            }
+          else // jest dalej, idŸ w jego kierunku
+            {
+            if (bestX == -1) // nie by³o wczeœniej takiej sytuacji
+              {
+              bestX = tmpX;
+              bestY = tmpY;
+              }
+            }
+          }
+        }
     }
 
   // przyjmij inny punkt w otoczeniu - wolny
-  *destX = lastX;
-  *destY = lastY;
+  if (bestX != -1)
+    {
+    *destX = bestX;
+    *destY = bestY;
+    }
+  else
+    {
+    *destX = wolneX;
+    *destY = wolneY;
+    }
   return 0; // nie ma nic jadalnego w okolicy
 } // WybierzFood
 
@@ -448,6 +500,7 @@ short WybierzDlaNowego(short x1, short y1, short* destX, short* destY)
 {
   short kolej[4];
   short a;
+
 
   UstalRandom4(kolej);
   // w losowej kolejnoœci - punkty s¹siednie
@@ -812,7 +865,7 @@ char ZnakSegmentu(short* tab)
 
 //---------------------------------------------------------------------------
 //! Ustal jaki znak pozwala na pokazanie kszta³tu
-char ZnakWeza(short x, short y)
+char ZnakWeza(short x, short y, short debug)
 {
   OBIEKTINFO_ZWIERZ* ptrZ;
   char znak = '*';
@@ -831,15 +884,15 @@ char ZnakWeza(short x, short y)
         {
         // g³owa ma literkê
         znak = 'A' + ptrZ->z_zapas -1;
-        //znak = '8';
+        if (znak > 'Z')
+          znak = '$';
         return znak;
         }
-/*      if (a == ptrZ->z_size-1)
+      else
         {
-        // koniec ogona to kropka
-        znak = '.';
-        return znak;
-        }*/
+        if (debug) // w trybie debug pokazuj cyferki
+          return '0'+a;
+        }
       // zwyk³e znaki segmentowe
       memset(bs, 0, sizeof(bs));
       t = TypSasiada(ptrZ->z_x[a], ptrZ->z_y[a], ptrZ->z_x[a-1], ptrZ->z_y[a-1]);
@@ -856,7 +909,7 @@ char ZnakWeza(short x, short y)
 
 //---------------------------------------------------------------------------
 //! Zamieñ punkt mapy na literkê do wydruku
-void DrukujZnakMapy(short x, short y)
+void DrukujZnakMapy(short x, short y, short zwierz)
 {
   char  znak[2]= "_";
   short poz;
@@ -885,18 +938,22 @@ void DrukujZnakMapy(short x, short y)
   if (CzyMapaZwierz(x,y)) // jest zwierz w tabeli
     {
     poz = ptr->pm_zwierz.pm1_poz;
-    znak[0] = ZnakWeza(x,y);
-    if (listaZwierz[poz].z_def == 0)
-      SetTextColor(FOREGROUND_BLUE);
-    else // 2
-      SetTextColor(FOREGROUND_RED);
+    if (zwierz == -1  // bierz wszystkie
+      ||zwierz == poz)// bierz konkretnie tego
+      {
+      if (listaZwierz[poz].z_def == 0)
+        SetTextColor(FOREGROUND_GREEN);
+      else // 2
+        SetTextColor(FOREGROUND_RED);
+      znak[0] = ZnakWeza(x,y, zwierz != -1);
+      }
     }
   PutZnak(znak);
 } // DrukujZnakMapy
 
 //---------------------------------------------------------------------------
-//! Wyrzuæ stan mapy na standard output
-void DrukujMape(void)
+//! Wyrzuæ stan mapy na standard output, wszystkie zwierza (-1) lub wskazany
+void DrukujMape(short zwierz)
 {
   short x, y;
   short a, wazA, wazB;
@@ -915,10 +972,15 @@ void DrukujMape(void)
   printf("MAPA %ux%u: %lu (+%u)      \n", xSize, ySize, ileGen, czestoPokaz);
   printf("weze: %u %u   \n", wazA, wazB);
   printf("dead: %lu   \n", martwe);
+  if (zwierz == -1)
+    printf("wszystkie                       ");
+  else
+    printf("tylko: %u [id=%u]  ", zwierz, (unsigned)listaZwierz[zwierz].z_id);
+  printf("\n");
   for (y=0; y<ySize; y++)
     {
     for (x=0; x<xSize; x++)
-      DrukujZnakMapy(x,y);
+      DrukujZnakMapy(x,y, zwierz);
     printf("\n"); // koniec linii
     }
   printf("\n");
@@ -939,6 +1001,7 @@ Parametry wywo³ania:
 int main(int argc, char* argv[])
 {
   short a, znak = ' ';
+  short ktoryZwierz = -1; // -1 oznacz wszystkie
   if (argc >= 3)
     {
     a = atoi(argv[1]);
@@ -966,14 +1029,16 @@ int main(int argc, char* argv[])
   ileGen = 0;
   PusteTabele();
   ZapelnijMape();
-  DrukujMape();
+  DrukujMape(ktoryZwierz);
   znak = getch(); // praca krokowa
 
   _next:
   PrzetworzMape();
+
+  _pokaz: // tylko wyœwietl inaczej, bez przetwarzania
   if ((ileGen % czestoPokaz)==0)
     {
-    DrukujMape();
+    DrukujMape(ktoryZwierz);
     znak = getch(); // praca krokowa
     }
   SetTextColor(FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
@@ -987,7 +1052,18 @@ int main(int argc, char* argv[])
     czestoPokaz = 1000;
   if (znak == '5')
     czestoPokaz = 10000;
-
+  if (znak == 'd')
+    {
+    ktoryZwierz++;
+    if (ktoryZwierz >= ileZwierz)
+      ktoryZwierz = 0;
+    goto _pokaz;
+    }
+  if (znak == 'w')
+    {
+    ktoryZwierz = -1; // znowu pokazuj wszystkie
+    goto _pokaz;
+    }
   if (znak == 'q')
     {
     delete[] mapa;
