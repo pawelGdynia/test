@@ -106,8 +106,8 @@ typedef struct
 //!  Alogorytmy przetwarzania obiektów i mapy
 //@{ @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
-static short xSize = 22;
-static short ySize = 22;
+static short xSize = 50;
+static short ySize = 20;
 
 static PUNKT_MAPY* mapa;
 static DEF_GRUNT defGrunt[] = {
@@ -116,7 +116,9 @@ static DEF_GRUNT defGrunt[] = {
   {0,1}  // 2, pustynia
   };
 #define ILE_DEFGRUNT (sizeof(defGrunt)/sizeof(defGrunt[0]))
-
+#define G_ROLNA  0
+#define G_OCEAN  1
+#define G_PUSTKA 2
 static DEF_ROSLINA defRoslina[] = {
   {9, 2},
   };
@@ -189,16 +191,24 @@ void DodajGrunt(short x, short y, short id)
 //! Dopisz na mapie dane roœliny
 void DodajRosline(short x, short y, short id)
 {
-  PUNKT_MAPY* ptr;
+  PUNKT_MAPY* ptrMapa;
+  OBIEKTINFO_GRUNT* ptrG;
+  DEF_GRUNT* defG;
   if (ileRoslin >= xSize * ySize)
     {
     printf("E:DodajRosline()");
     return; // nie dodawaj - nie ma miejsca
     }
-  ptr = PtrPunktMapy(x,y);
+  ptrMapa = PtrPunktMapy(x,y);
+  // sprawdŸ, czy grunt siê nadaje
+  ptrG = listaGrunt + (ptrMapa->pm_grunt.pm1_poz);
+  defG = defGrunt + ptrG->g_def;
+  if (defG->dg_blok != 0
+    ||defG->dg_dead != 0)
+    return; // miejsce siê nie nadaje dla roœlin
   // info w samej mapie
-  ptr->pm_roslina.pm1_tab = TAB_ROSLINA;
-  ptr->pm_roslina.pm1_poz = ileRoslin;
+  ptrMapa->pm_roslina.pm1_tab = TAB_ROSLINA;
+  ptrMapa->pm_roslina.pm1_poz = ileRoslin;
 
   // info w obiekcie
   listaRoslin[ileRoslin].r_common.x = x;
@@ -219,6 +229,8 @@ void DodajZwierz(short x, short y, short id)
   PUNKT_MAPY* ptrMapa;
   OBIEKTINFO_ZWIERZ* ptrZ;
   DEF_ZWIERZ* ptrDef;      // definicja
+  OBIEKTINFO_GRUNT* ptrG;
+  DEF_GRUNT* defG;
 
   if (ileZwierz >= xSize * ySize)
     {
@@ -226,6 +238,11 @@ void DodajZwierz(short x, short y, short id)
     return; // nie dodawaj - nie ma miejsca
     }
   ptrMapa = PtrPunktMapy(x,y);
+  ptrG = listaGrunt + (ptrMapa->pm_grunt.pm1_poz);
+  defG = defGrunt + ptrG->g_def;
+  if (defG->dg_blok != 0)
+    return; // miejsce siê nie nadaje dla zwierz¹t
+
   ptrZ = listaZwierz+ileZwierz;
   ptrDef = defZwierz + id;
   // info w samej mapie
@@ -254,12 +271,21 @@ void DodajZwierz(short x, short y, short id)
 
 //---------------------------------------------------------------------------
 //! Wype³nij struktury pierwsz¹ generacj¹ obiektów
-void ZapelnijMape(void)
+void ZapelnijMapeFull(void)
 {
   short x,y;
+  PUNKT_MAPY* ptrMapa;
 
-  PUNKT_MAPY* ptr;
-
+  // Pierwszy przebieg - grunty
+  for (x=0; x<xSize; x++)
+    for (y=0; y<ySize; y++)
+      {
+      ptrMapa = PtrPunktMapy(x,y);
+      ptrMapa->x = x;
+      ptrMapa->y = y;
+      // grunty rolne - wszêdzie uprawne (typ 0)
+      DodajGrunt(x, y, G_ROLNA);
+      }
 
   DodajZwierz(3, 1, 1);
   DodajZwierz(4, 1, 1);
@@ -267,11 +293,7 @@ void ZapelnijMape(void)
   for (x=0; x<xSize; x++)
     for (y=0; y<ySize; y++)
       {
-      ptr = PtrPunktMapy(x,y);
-      ptr->x = x;
-      ptr->y = y;      
-      // grunty rolne - wszêdzie uprawne (typ 0)
-      DodajGrunt(x, y, 0);
+      ptrMapa = PtrPunktMapy(x,y);
 
       // roœliny
       //if (y%2) // tylko kilka rz¹dków roœliny zwyk³ej (typ 0)
@@ -279,6 +301,76 @@ void ZapelnijMape(void)
       if (x==y)
         DodajZwierz(x, y, 0); // gatunek "0"
       }
+} // ZapelnijMapeFull
+
+char mapa1[20][51] = {
+{"000000000000000000000000000000000000000111111111110"},
+{"011111122222222222222222100000001111111111111111100"},
+{"010001111111111111111111110001111111111111111111111"},
+{"011011112222222222222222210000111111111111111111111"},
+{"011111111111111111111111110011111111111111111111111"}, // 5
+{"011111112222222222222222210011111111111111111111111"},
+{"001111111111111111111111110001111111111111111111111"},
+{"000000000000122222222222111100111111111111111111111"},
+{"000000000222222222222211100000111111111111111111111"},
+{"000001111222222222222220000000011111111111111111111"}, // 10
+{"011111111222222222222221100000000111111111111111111"},
+{"011111111110000000000111111111111100000000000000001"},
+{"011111111000000000000001111111111000000000000000001"},
+{"011111110000000000000000111111111000000000000000001"},
+{"011111111000000000000000000000010000000000000000001"}, // 15
+{"011111111100000000000000000000111111111111111111111"},
+{"001111111111111100000000011111111111111111111111111"},
+{"000001111111111111111111111111111111111111111111111"},
+{"000000011111111111111111111111111111111111111111111"},
+{"000000001111111111111111111111111111111111111111111"}, // 20
+};
+
+//---------------------------------------------------------------------------
+//! Zamieñ 0,1,2 na rodzaj gruntu
+char Znak2Grunt(char znak)
+{
+  switch (znak)
+    {
+    case '0':
+      return G_OCEAN; // ocean
+
+    case '1': // pustynia
+      return G_PUSTKA;
+
+    case '2':
+      return G_ROLNA; // uprawna
+    }
+  return G_OCEAN; // wartoœæ domyœlna - ocean
+} // Znak2Grunt
+
+//---------------------------------------------------------------------------
+//! Wype³nij mapê - wg tabeli z pamiêci
+void ZapelnijMapeTab(void)
+{
+  short x, y;
+  char znak;
+  PUNKT_MAPY* ptrMapa;
+    
+  for (x=0; x<xSize; x++)
+    for (y=0; y<ySize; y++)
+      {
+      ptrMapa = PtrPunktMapy(x,y);
+      ptrMapa->x = x;
+      ptrMapa->y = y;
+      // grunty rolne - wszêdzie uprawne (typ 0)
+      znak = Znak2Grunt(mapa1[y][x]);
+      DodajGrunt(x, y, znak);
+      }
+  DodajZwierz(3, 1, 1);
+} // ZapelnijMapeTab
+
+//---------------------------------------------------------------------------
+//! Wype³nij mapê - z jednego z kilku Ÿróde³
+void ZapelnijMape(void)
+{
+  //ZapelnijMapeFull();
+  ZapelnijMapeTab();
 } // ZapelnijMape
 
 short losowe[24][4] = { // wszystkie mo¿liwe kolejnoœci dla 4 elementów
@@ -316,10 +408,10 @@ short CzyPunktZakres(short x, short y)
 //! Sprawdza czy dla podanych wspó³rzêdnych wystêpuje obiekt - roœlina
 short CzyMapaRoslina(short x, short y)
 {
-  PUNKT_MAPY* ptr;
-  ptr = PtrPunktMapy(x,y);
+  PUNKT_MAPY* ptrMapa;
+  ptrMapa = PtrPunktMapy(x,y);
 
-  if (ptr->pm_roslina.pm1_tab == 0)
+  if (ptrMapa->pm_roslina.pm1_tab == 0)
     return 0; // nie ma tam roœliny
 
   return 1; // jest
@@ -329,24 +421,24 @@ short CzyMapaRoslina(short x, short y)
 //! Któr¹ pozycjê w tabeli zajmuje roœlina?
 short GetPozRoslina(short x, short y)
 {
-  PUNKT_MAPY* ptr;
-  ptr = PtrPunktMapy(x,y);
+  PUNKT_MAPY* ptrMapa;
+  ptrMapa = PtrPunktMapy(x,y);
 
-  return ptr->pm_roslina.pm1_poz;
+  return ptrMapa->pm_roslina.pm1_poz;
 } // GetPozRoslina
 
 //---------------------------------------------------------------------------
 //! Sprawdza czy dla podanych wspó³rzêdnych zwierz zwyk³y (1) czy drapie¿nik (2)
 short CzyMapaZwierz(short x, short y)
 {
-  PUNKT_MAPY* ptr;
+  PUNKT_MAPY* ptrMapa;
   DEF_ZWIERZ* ptrDef;      // definicja
   short poz;
-  ptr = PtrPunktMapy(x,y);
+  ptrMapa = PtrPunktMapy(x,y);
 
-  if (ptr->pm_zwierz.pm1_tab == 0)
+  if (ptrMapa->pm_zwierz.pm1_tab == 0)
     return 0; // nie ma tam nikogo
-  poz = ptr->pm_zwierz.pm1_poz;
+  poz = ptrMapa->pm_zwierz.pm1_poz;
   if (listaZwierz[poz].z_def<0)
     return 0; // jest ale martwy
   ptrDef = defZwierz + listaZwierz[poz].z_def;
@@ -360,10 +452,10 @@ short CzyMapaZwierz(short x, short y)
 //! Któr¹ pozycjê w tabeli zajmuje zwierz?
 short GetPozZwierz(short x, short y)
 {
-  PUNKT_MAPY* ptr;
-  ptr = PtrPunktMapy(x,y);
+  PUNKT_MAPY* ptrMapa;
+  ptrMapa = PtrPunktMapy(x,y);
 
-  return ptr->pm_zwierz.pm1_poz;
+  return ptrMapa->pm_zwierz.pm1_poz;
 } // GetPozZwierz
 
 //---------------------------------------------------------------------------
@@ -1097,21 +1189,44 @@ char ZnakWeza(short x, short y)
 } // ZnakWeza
 
 //---------------------------------------------------------------------------
+//! Ustal znak i kolor dla gruntu
+char ZnakGruntu(PUNKT_MAPY* ptrMapa, short* kolor)
+{
+  OBIEKTINFO_GRUNT* ptrG;
+
+  ptrG = listaGrunt + ptrMapa->pm_grunt.pm1_poz;
+  switch (ptrG->g_def)
+    {
+    case G_ROLNA:
+      *kolor = FOREGROUND_GREEN;
+      return '.';
+
+    case G_OCEAN:
+      *kolor = FOREGROUND_GREEN;
+      return ' ';
+
+    case G_PUSTKA:
+      *kolor = FOREGROUND_GREEN | FOREGROUND_RED;
+      return '*';
+    }
+  *kolor = FOREGROUND_RED;
+  return '?';
+} // ZnakGruntu
+
+//---------------------------------------------------------------------------
 //! Zamieñ punkt mapy na literkê do wydruku
 void DrukujZnakMapy(short x, short y)
 {
   char  znak[2]= "_";
-  short poz;
-  PUNKT_MAPY* ptr;
-  ptr = PtrPunktMapy(x,y);
+  short poz, kolor;
+  PUNKT_MAPY* ptrMapa;
+  ptrMapa = PtrPunktMapy(x,y);
 
   // grunt
-  poz = ptr->pm_grunt.pm1_poz;
-  if (ptr->pm_grunt.pm1_tab != 0)
-    {
-    SetTextColor(FOREGROUND_RED | FOREGROUND_GREEN);
-    strcpy(znak, ".");
-    }
+  poz = ptrMapa->pm_grunt.pm1_poz;
+  znak[0] = ZnakGruntu(ptrMapa, &kolor);
+  SetTextColor(kolor); //FOREGROUND_RED | FOREGROUND_GREEN);
+
 
   // roœliny
   if (CzyMapaRoslina(x,y)) // jest trawa w tabeli
@@ -1126,7 +1241,7 @@ void DrukujZnakMapy(short x, short y)
   // zwierzeta
   if (CzyMapaZwierz(x,y)) // jest zwierz w tabeli
     {
-    poz = ptr->pm_zwierz.pm1_poz;
+    poz = ptrMapa->pm_zwierz.pm1_poz;
     if (debug == 0 // pokazuj wszystkie - nie ma trybu debug
       ||listaZwierz[poz].z_id == selZwierz) // bie¿¹cy
       {
