@@ -24,22 +24,22 @@ typedef struct
 // W³aœciwoœci WSPÓLNE
 typedef struct
   {
-  short oic_x;  // wspó³rzêdna x na mapie
-  short oic_y;  // wspó³rzêdna y na mapie
-  short oic_po; // czy po przetworzeniu
+  short x;  // wspó³rzêdna x na mapie
+  short y;  // wspó³rzêdna y na mapie
+  short po; // czy po przetworzeniu
   } OBIEKTINFO_COMMON;
 
 //=== GRUNTY ===============================================================
 typedef struct // info wspólne dla wszystkich wyst¹pieñ
   {
-  short defg_blok; // miejsce niedostêpne - ani roœlin ani zwierz¹t
-  short defg_dead; // miejsce martwe - bez roœlin, ale dostêpne dla zwierz¹t
+  short dg_blok; // miejsce niedostêpne - ani roœlin ani zwierz¹t
+  short dg_dead; // miejsce martwe - bez roœlin, ale dostêpne dla zwierz¹t
   } DEF_GRUNT;
 
 typedef struct // info dla jednego punktu
   {
-  short oig_defpoz;              // która definicja w³aœciwoœci
-  OBIEKTINFO_COMMON oig_common; // informacje bazowe, systemowe
+  short g_defpoz;              // która definicja w³aœciwoœci
+  OBIEKTINFO_COMMON g_common; // informacje bazowe, systemowe
 
   // dane indywidualne obiektu: brak
   } OBIEKTINFO_GRUNT;
@@ -47,24 +47,25 @@ typedef struct // info dla jednego punktu
 //== ROŒLINY ===============================================================
 typedef struct // info wspólne dla wszystkich wyst¹pieñ
   {
-  short defr_czasWzrostu; // max poziom, ile okresów na pe³ny wzrost od zera
+  short dr_czasWzrostu; // max poziom, ile okresów na pe³ny wzrost od zera
+  short dr_kalorie;     // ile punktów zyskuje zjadaj¹cy
   } DEF_ROSLINA;
 
 typedef struct
   {
-  short oir_defpoz; // która definicja w³aœciwoœci
-  OBIEKTINFO_COMMON oir_common; // informacje bazowe, systemowe
+  short r_defpoz; // która definicja w³aœciwoœci
+  OBIEKTINFO_COMMON r_common; // informacje bazowe, systemowe
 
   // dane indywidualne obiektu
-  short oir_poziom; // bie¿acy poziom wzrostu - max to defr_czasWzrostu
+  short r_poziom; // bie¿acy poziom wzrostu - max to defr_czasWzrostu
   } OBIEKTINFO_ROSLINA;
 
 //=== ZWIERZÊTA ============================================================
 typedef struct // info wspólne dla wszystkich wyst¹pieñ
   {
-  short defz_maxZapas;  // ile zasobow (trawy) mo¿e przechowaæ
-  short defz_roslinozerca;
-  short defz_drapieznik;    
+  short dz_maxZapas;  // ile zasobow (trawy) mo¿e przechowaæ
+  short dz_roslinozerca;
+  short dz_drapieznik;    
   //short defz_maxModul;  // do ilu modu³ów mo¿e rosn¹æ
 
   //short defz_zapNowyMod;// ile zasobów ¿ywnoœci trzeba na wzrost o 1 modu³
@@ -73,11 +74,11 @@ typedef struct // info wspólne dla wszystkich wyst¹pieñ
 
 typedef struct
   {
-  short oiz_defpoz; // która definicja w³aœciwoœci
-  OBIEKTINFO_COMMON oiz_common; // informacje bazowe, systemowe
+  short z_defpoz; // która definicja w³aœciwoœci
+  OBIEKTINFO_COMMON z_common; // informacje bazowe, systemowe
 
   // dane indywidualne obiektu
-  short oiz_zapas;  // bie¿acy poziom zapasu ¿ywnoœci
+  short z_zapas;  // bie¿acy poziom zapasu ¿ywnoœci
   } OBIEKTINFO_ZWIERZ;
 
 
