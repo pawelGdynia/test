@@ -574,7 +574,7 @@ void ProcessZwierz(short poz)
     UsunMartwego(poz);
 
   // rozmna¿anie
-/*  if (ptrZ1->z_zapas >= defZ1->dz_maxZapas) // s¹ nadwy¿ki do wydania
+  if (ptrZ1->z_zapas >= defZ1->dz_maxZapas) // s¹ nadwy¿ki do wydania
     {
     short ok;
     short mapNewX, mapNewY;
@@ -585,8 +585,9 @@ void ProcessZwierz(short poz)
       ptrZ1->z_zapas -= 5; // zmniejsz poziom zapasu matce
       DodajZwierz(mapNewX, mapNewY, ptrZ1->z_def);
       }
-    }*/
+    }
 } // ProcessZwierz
+
 
 //---------------------------------------------------------------------------
 //! Usuñ zw³oki z listy
@@ -606,10 +607,14 @@ void UsunMartwe(void)
         short a;
         for (a=0; a<ileZwierz-poz-1; a++)
           {
-          x = listaZwierz[poz+a].z_common.x;
-          y = listaZwierz[poz+a].z_common.y;
-          ptrSrc = PtrPunktMapy(x, y);
-          ptrSrc->pm_zwierz.pm1_poz--; // przenumeruj o 1 w dó³
+          short seg;
+          for (seg=0; seg<listaZwierz[poz+a].z_size; seg++)
+            {
+            x = listaZwierz[poz+a].z_x[seg];
+            y = listaZwierz[poz+a].z_y[seg];
+            ptrSrc = PtrPunktMapy(x, y);
+            ptrSrc->pm_zwierz.pm1_poz--; // przenumeruj o 1 w dó³
+            }
           }
         }
       ileZwierz--;
