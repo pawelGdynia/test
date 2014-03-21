@@ -16,7 +16,7 @@
 #define TAB_ROSLINA 2
 #define TAB_ZWIERZ  3
 
-#define MAX_SIZE 15
+#define MAX_SIZE 20
 typedef struct
   {
   short pm1_tab; // TAB_*: w której tabeli obiektów znajduje siê opis
@@ -101,8 +101,8 @@ typedef struct
 //!  Alogorytmy przetwarzania obiektów i mapy
 //@{ @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
-static short xSize = 40;
-static short ySize = 20;
+static short xSize = 10;
+static short ySize = 10;
 
 static PUNKT_MAPY* mapa;
 static DEF_GRUNT defGrunt[] = {
@@ -258,11 +258,11 @@ void ZapelnijMape(void)
       // roœliny
       //if (y%2) // tylko kilka rz¹dków roœliny zwyk³ej (typ 0)
         DodajRosline(x, y, 0);
-//      if (x==y)
-//        DodajZwierz(x, y, 0); // gatunek "0"
+      if (x==y)
+        DodajZwierz(x, y, 0); // gatunek "0"
       }
 // DodajZwierz(1, 1, 0);
- DodajZwierz(1, 1, 1);
+ DodajZwierz(3, 1, 1);
 } // ZapelnijMape
 
 short losowe[24][4] = { // wszystkie mo¿liwe kolejnoœci dla 4 elementów
@@ -325,11 +325,15 @@ short CzyMapaZwierz(short x, short y)
 {
   PUNKT_MAPY* ptr;
   DEF_ZWIERZ* ptrDef;      // definicja
+  short poz;
   ptr = PtrPunktMapy(x,y);
 
   if (ptr->pm_zwierz.pm1_tab == 0)
     return 0; // nie ma tam nikogo
-  ptrDef = defZwierz + listaZwierz[ptr->pm_zwierz.pm1_poz].z_def;
+  poz = ptr->pm_zwierz.pm1_poz;
+  if (listaZwierz[poz].z_def<0)
+    return 0; // jest ale martwy
+  ptrDef = defZwierz + listaZwierz[poz].z_def;
   if (ptrDef->dz_drapieznik > 0)
     return 2; // jest drapie¿nik
 
@@ -690,7 +694,7 @@ void UsunMartwe(void)
         memmove(listaZwierz+poz, listaZwierz+poz+1, sizeof(listaZwierz[0])*(ileZwierz-poz-1));
 
         // przenumeruj obiekty na mapie (o -1)
-        short a;
+        short a;         
         for (a=0; a<ileZwierz-poz-1; a++)
           {
           short seg;
@@ -699,15 +703,29 @@ void UsunMartwe(void)
             x = listaZwierz[poz+a].z_x[seg];
             y = listaZwierz[poz+a].z_y[seg];
             ptrSrc = PtrPunktMapy(x, y);
-            ptrSrc->pm_zwierz.pm1_poz--; // przenumeruj o 1 w dó³
+            ptrSrc->pm_zwierz.pm1_poz = poz+a; // nowy numer
+            //if (ptrSrc->pm_zwierz.pm1_poz < 0)
+            //  printf("MINUS");
             }
           }
         }
       ileZwierz--;
       martwe++;
       }
-
 } // UsunMartwe
+
+//---------------------------------------------------------------------------
+void TestMapy(void)
+{
+  short x,y;
+  PUNKT_MAPY* ptrMapa=NULL;
+
+  for (y=0; y<ySize; y++)
+    for (x=0; x<xSize; x++)
+      {
+      ptrMapa = PtrPunktMapy(x, y);
+      }
+} // TestMapy
 
 //---------------------------------------------------------------------------
 //! Przetwarzanie obiektow o 1 jednostkê czasu
@@ -718,7 +736,7 @@ void PrzetworzMape(void)
   ileGen++;
   // przegl¹danie kolejnych obiektów jest szybsze ni¿ przegl¹danie wg mapy
   // nie tracimy czasu na puste komórki
-
+  //TestMapy();
   max = ileRoslin; // ustal iloœæ przed - nowo dodane nie bêd¹ uwzglêdnione
   for (poz=0; poz<max; poz++)
     ProcessRoslina(poz);
