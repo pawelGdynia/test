@@ -368,95 +368,92 @@ void ProcessRoslina(short poz)
 } // ProcessRoslina
 
 //---------------------------------------------------------------------------
-//! Przetwarzanie obiektow o 1 jednostkê czasu
-void PrzetworzMape(void)
+// Przetwórz zwierzê z listy
+void ProcessZwierz(short poz)
 {
-  short x,y, poz;
   short mapX, mapY;
   short destX, destY;
   short zjedz=0;
-  short poz2;
+  short poz2;  
   PUNKT_MAPY* ptrSrc=NULL;
   PUNKT_MAPY* ptrDst=NULL;
-  ileGen++;
 
-  // przegl¹danie kolejnych obiektów jest szybsze ni¿ przegl¹danie wg mapy
-  // nie tracimy czasu na puste komórki
+  if (listaZwierz[poz].oiz_defpoz < 0) // pomijaj martwe (czyli ujemne)
+    return;
 
-  for (poz=0; poz<ileRoslin; poz++)
-    ProcessRoslina(poz);
+  mapX = listaZwierz[poz].oiz_common.oic_x;
+  mapY = listaZwierz[poz].oiz_common.oic_y;
 
-  // zwierzêta
-  for (poz=0; poz<ileZwierz; poz++)
-    if (listaZwierz[poz].oiz_defpoz >= 0) // pomijaj martwe (czyli ujemne)
+  //=== Ustal miejsce do którego ma siê przemieœciæ
+  zjedz = WybierzFood(mapX, mapY, &destX, &destY);
+  if (destX != mapX
+    ||destY != mapY) // tylko gdy zmienia miejsce
+    {
+    // przepisz dane ze starego miejsca do nowego
+    ptrSrc = PtrPunktMapy(mapX, mapY);
+    ptrDst = PtrPunktMapy(destX, destY);
+    ptrDst->pm_zwierz.pm1_tab = ptrSrc->pm_zwierz.pm1_tab;
+    ptrDst->pm_zwierz.pm1_poz = ptrSrc->pm_zwierz.pm1_poz;
+
+    // wyma¿ w starym miejscu na mapie
+    ptrSrc->pm_zwierz.pm1_tab = 0;
+    ptrSrc->pm_zwierz.pm1_poz = 0;
+
+    // w tabeli zwierz zmieñ wspó³rzêdna na mapie
+    listaZwierz[poz].oiz_common.oic_x = destX;
+    listaZwierz[poz].oiz_common.oic_y = destY;
+    }
+  //=== zjedz trawê w miejscu postoju
+  if (zjedz)
+    {
+    if (RoslinaJadalna(destX, destY))
       {
-      mapX = listaZwierz[poz].oiz_common.oic_x;
-      mapY = listaZwierz[poz].oiz_common.oic_y;
-
-      //=== Ustal miejsce do którego ma siê przemieœciæ
-      zjedz = WybierzFood(mapX, mapY, &destX, &destY);
-      if (destX != mapX
-        ||destY != mapY) // tylko gdy zmienia miejsce
+      poz2 = GetPozRoslina(destX, destY);
+      if (CzyMapaRoslina(destX, destY)) // jest trawa w tabeli
         {
-        // przepisz dane ze starego miejsca do nowego
-        ptrSrc = PtrPunktMapy(mapX, mapY);
-        ptrDst = PtrPunktMapy(destX, destY);
-        ptrDst->pm_zwierz.pm1_tab = ptrSrc->pm_zwierz.pm1_tab;
-        ptrDst->pm_zwierz.pm1_poz = ptrSrc->pm_zwierz.pm1_poz;
-
-        // wyma¿ w starym miejscu na mapie
-        ptrSrc->pm_zwierz.pm1_tab = 0;
-        ptrSrc->pm_zwierz.pm1_poz = 0;
-
-        // w tabeli zwierz zmieñ wspó³rzêdna na mapie
-        listaZwierz[poz].oiz_common.oic_x = destX;
-        listaZwierz[poz].oiz_common.oic_y = destY;
-        }
-      //=== zjedz trawê w miejscu postoju
-      if (zjedz)
-        {
-        if (RoslinaJadalna(destX, destY))
-          {
-          poz2 = GetPozRoslina(destX, destY);
-          if (CzyMapaRoslina(destX, destY)) // jest trawa w tabeli
-            {
-            listaRoslin[poz2].oir_poziom = 0;
-            if (listaZwierz[poz].oiz_zapas < 20)
-              listaZwierz[poz].oiz_zapas += 2;
-            }
-          }
-        }
-
-      //=== zmniejsz zapas
-      if (listaZwierz[poz].oiz_zapas > 0)
-        listaZwierz[poz].oiz_zapas--;
-
-      //=== Niestety, jest martwy - usuñ go z mapy
-      if (listaZwierz[poz].oiz_zapas <= 0)
-        {
-        // 1.usuñ dane z mapy
-        ptrDst->pm_zwierz.pm1_tab = 0;
-        ptrDst->pm_zwierz.pm1_poz = 0;
-
-        // 2.oznakuj w tabeli jako martwy
-        listaZwierz[poz].oiz_defpoz = -1;
-        }
-      // rozmna¿anie
-      if (listaZwierz[poz].oiz_zapas >=20) // s¹ nadwy¿ki do wydania
-        {
-        short ok;
-        short destX2, destY2;
-
-        ok = WybierzDlaNowego(destX, destY, &destX2, &destY2);
-        if (ok)
-          {
-          listaZwierz[poz].oiz_zapas -= 10; // zmniejsz poziom zapasu matce
-          DodajZwierz(destX2, destY2, 1);
-          }
+        listaRoslin[poz2].oir_poziom = 0;
+        if (listaZwierz[poz].oiz_zapas < 20)
+          listaZwierz[poz].oiz_zapas += 2;
         }
       }
+    }
 
-  // usuñ martwe z listy
+  //=== zmniejsz zapas
+  if (listaZwierz[poz].oiz_zapas > 0)
+    listaZwierz[poz].oiz_zapas--;
+
+  //=== Niestety, jest martwy - usuñ go z mapy
+  if (listaZwierz[poz].oiz_zapas <= 0)
+    {
+    // 1.usuñ dane z mapy
+    ptrDst->pm_zwierz.pm1_tab = 0;
+    ptrDst->pm_zwierz.pm1_poz = 0;
+
+    // 2.oznakuj w tabeli jako martwy
+    listaZwierz[poz].oiz_defpoz = -1;
+    }
+  // rozmna¿anie
+  if (listaZwierz[poz].oiz_zapas >=20) // s¹ nadwy¿ki do wydania
+    {
+    short ok;
+    short destX2, destY2;
+
+    ok = WybierzDlaNowego(destX, destY, &destX2, &destY2);
+    if (ok)
+      {
+      listaZwierz[poz].oiz_zapas -= 10; // zmniejsz poziom zapasu matce
+      DodajZwierz(destX2, destY2, 1);
+      }
+    }
+} // ProcessZwierz
+
+//---------------------------------------------------------------------------
+//! Usuñ zw³oki z listy
+void UsunMartwe(void)
+{
+  short x,y, poz;
+  PUNKT_MAPY* ptrSrc=NULL;
+
   for (poz=ileZwierz-1; poz>=0; poz--)
     if (listaZwierz[poz].oiz_defpoz == -1) // do usuniêcia
       {
@@ -477,6 +474,29 @@ void PrzetworzMape(void)
       ileZwierz--;
       martwe++;
       }
+
+} // UsunMartwe
+
+//---------------------------------------------------------------------------
+//! Przetwarzanie obiektow o 1 jednostkê czasu
+void PrzetworzMape(void)
+{
+  short poz;
+
+  ileGen++;
+  // przegl¹danie kolejnych obiektów jest szybsze ni¿ przegl¹danie wg mapy
+  // nie tracimy czasu na puste komórki
+
+  for (poz=0; poz<ileRoslin; poz++)
+    ProcessRoslina(poz);
+
+  // zwierzêta
+  for (poz=0; poz<ileZwierz; poz++)
+    ProcessZwierz(poz);
+
+  // usuñ martwe z listy
+  UsunMartwe();
+
 } // PrzetworzMape
 
 //@} weze_przetwarzanie
