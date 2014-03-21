@@ -130,11 +130,100 @@ void ZapelnijMape(void)
 } // ZapelnijMape
 
 //---------------------------------------------------------------------------
+//! Ustaw losowo liczby 1-4
+void UstalRandom4(short* num4)
+{
+  num4[0] = 1;
+  num4[1] = 2;
+  num4[2] = 3;
+  num4[3] = 4;
+} // UstalRandom4
+
+//---------------------------------------------------------------------------
+//! Pobierz poziom wzrostu roœliny o zadanych wspó³rzêdnych
+short StanRosliny(short x, short y)
+{
+  short poz;
+
+  if (x < 0
+    ||y < 0
+    ||x >= X_SIZE
+    ||y >= Y_SIZE)
+    return 0; // poza zakresem - tam nic nie ma!
+
+  poz = mapa[x][y].pm_roslina.pm1_poz;
+  return listaRoslin[poz].oir_poziom;
+} // StanRosliny
+
+//---------------------------------------------------------------------------
+//! Uniwersalna procedura sprawdzania czy roœlina jadalna
+short RoslinaJadalna(short poziom)
+{
+  if (poziom==9)
+    return 1; // tylko maksymalne s¹ jadalne
+
+  return 0;
+} // RoslinaJadalna
+
+//---------------------------------------------------------------------------
+//! Wybierz z s¹siedztwa miejsce do zjedzenia, wynik=1 oznacza ¿e wybrano
+short WybierzFood(short x1, short y1, short* destX, short* destY)
+{
+  short a, stan;
+  short kolej[4];
+
+  UstalRandom4(kolej);
+
+  // najpierw punkt bie¿¹cego pobytu
+  stan = StanRosliny(x1, y1);
+  if (RoslinaJadalna(stan))
+    {
+    *destX = x1;
+    *destY = y1;
+    return 1;
+    }
+
+  // w losowej kolejnoœci - punkty s¹siednie
+  for (a=0; a<4; a++)
+    {
+    switch (kolej[a])
+      {
+      case 1: // na górze
+        *destX = x1;
+        *destY = y1-1;
+        break;
+
+      case 2: // z prawej
+        *destX = x1+1;
+        *destY = y1;
+        break;
+
+      case 3: // na dole
+        *destX = x1;
+        *destY = y1+1;
+        break;
+
+      case 4: // z lewej
+        *destX = x1-1;
+        *destY = y1;
+        break;
+      }
+    stan = StanRosliny(*destX, *destY);
+    if (RoslinaJadalna(stan))
+      return 1;
+    }
+  return 0; // nie ma nic jadalnego w okolicy
+} // WybierzFood
+
+//---------------------------------------------------------------------------
 //! Przetwarzanie obiektow o 1 jednostkê czasu
 void PrzetworzMape(void)
 {
   short x,y, poz;
   short mapX, mapY;
+  short destX, destY;
+  short zjedz=0;
+  short poz2;
   ileGen++;
 
   // roœliny
@@ -150,13 +239,39 @@ void PrzetworzMape(void)
   for (poz=1; poz<=ileZwierz; poz++)
     if (listaZwierz[poz].oiz_defid > 0) // pomijaj martwe
       {
+      mapX = listaZwierz[poz].oiz_common.oic_x;
+      mapY = listaZwierz[poz].oiz_common.oic_y;
+
+      //=== Ustal miejsce do którego ma siê przemieœciæ
+      zjedz = WybierzFood(mapX, mapY, &destX, &destY);
+
+      // przepisz dane ze starego miejsca do nowego
+      mapa[destX][destY].pm_zwierz.pm1_typ = mapa[mapX][mapY].pm_zwierz.pm1_typ;
+      mapa[destX][destY].pm_zwierz.pm1_poz = mapa[mapX][mapY].pm_zwierz.pm1_poz;
+
+      // wyma¿ w starym miejscu na mapie
+      mapa[mapX][mapY].pm_zwierz.pm1_typ = 0;
+      mapa[mapX][mapY].pm_zwierz.pm1_poz = 0;
+
+      // w tabeli zwierz zmieñ wspó³rzêdna na mapie
+      listaZwierz[poz].oiz_common.oic_x = destX;
+      listaZwierz[poz].oiz_common.oic_y = destY;
+
+      //=== zjedz trawê
+      if (zjedz)
+        {
+        .
+        poz2 = mapa[destX][destY].pm_roslina.pm1_poz;
+        listaRoslin[poz2].oir_poziom = 0;
+        }
+      //=== zmniejsz zapas
       if (listaZwierz[poz].oiz_zapas > 0)
-        listaZwierz[poz].oiz_zapas--; // zmniejsz zapas
-      if (listaZwierz[poz].oiz_zapas == 0) // jest martwy
+        listaZwierz[poz].oiz_zapas--;
+
+      //=== Niestety, jest martwy - usuñ go
+      if (listaZwierz[poz].oiz_zapas == 0)
         {
         // 1.usuñ dane z mapy
-        mapX = listaZwierz[poz].oiz_common.oic_x;
-        mapY = listaZwierz[poz].oiz_common.oic_y;
         mapa[mapX][mapY].pm_zwierz.pm1_typ = 0;
         mapa[mapX][mapY].pm_zwierz.pm1_poz = 0;
 
@@ -166,7 +281,10 @@ void PrzetworzMape(void)
       }
 
   // usuñ martwe z listy
-
+  for (poz=1; poz<=ileZwierz; poz++)
+    if (listaZwierz[poz].oiz_defid == 0) // do usuniêcia
+      {
+      }
 } // PrzetworzMape
 
 //---------------------------------------------------------------------------
@@ -189,7 +307,7 @@ void DrukujZnakMapy(short x, short y)
   // zwierzeta
   poz = mapa[x][y].pm_zwierz.pm1_poz;
   if (poz > 0)
-    znak[0] = 'A' + listaZwierz[poz].oiz_zapas;
+    znak[0] = 'A' + listaZwierz[poz].oiz_zapas -1;
 
   printf(znak);
 } // DrukujZnakMapy
@@ -228,7 +346,7 @@ int main(int argc, char* argv[])
     DrukujMape();
     }
   return 0;
-}
+} // main
 
 // eof: weze.cpp
 
