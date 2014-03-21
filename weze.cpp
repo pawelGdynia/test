@@ -737,7 +737,6 @@ short WybierzDlaNowego(short x1, short y1, short* destX, short* destY)
   short kolej[4];
   short a;
 
-
   UstalRandom4(kolej);
   // w losowej kolejnoœci - punkty s¹siednie
   for (a=0; a<4; a++)
@@ -1413,7 +1412,7 @@ void DrukujMape(void)
 
 //---------------------------------------------------------------------------
 //! Alokacja pamiêci
-void Alokuj(short typ)
+void AlokujPamiec(short typ)
 {
   if (typ==1)
     {
@@ -1430,7 +1429,7 @@ void Alokuj(short typ)
     delete[] listaRoslin;
     delete[] listaZwierz;
     }
-} // Alokuj
+} // AlokujPamiec
 
 /*
 Parametry wywo³ania:
@@ -1438,17 +1437,13 @@ Parametry wywo³ania:
 2) ySize
 3) czestoPokaz
 */
-//---------------------------------------------------------------------------
-//! G³ówne wejœcie do programu
-int main(int argc, char* argv[])
-{
-  short a, znak = ' ';
-  char extended;
-  short ktory;
-  char bufor[5];
-  unsigned long ile;
 
-  if (argc >= 3) // odczytaj rozmiar z command-line
+//---------------------------------------------------------------------------
+void CzytajCmdLine(int argc, char* argv[])
+{
+  short a;
+  
+  if (argc >= 3) // odczytaj rozmiar
     {
     a = atoi(argv[1]);
     if (a>3)
@@ -1458,13 +1453,26 @@ int main(int argc, char* argv[])
       ySize = a;
     }
 
-  if (argc==4) // odczytaj czestotliwoœæ z command-line
+  if (argc==4) // odczytaj czestotliwoœæ
     {
     a = atoi(argv[3]);
     if (a>1)
       czestoPokaz = a;
     }
-  Alokuj(1);
+} // CzytajCmdLine
+
+//---------------------------------------------------------------------------
+//! G³ówne wejœcie do programu
+int main(int argc, char* argv[])
+{
+  short znak = ' ';
+  char extended;
+  short ktory;
+  char bufor[5];
+  unsigned long ile;
+
+  CzytajCmdLine(argc, argv);
+  AlokujPamiec(1);
   PrzygotujEkran();
   ileGen = 0;
   PusteTabele();
@@ -1536,7 +1544,7 @@ int main(int argc, char* argv[])
 
   if (znak == 'q')
     {
-    Alokuj(2);
+    AlokujPamiec(2);
     return 0;
     }
   goto _next;
