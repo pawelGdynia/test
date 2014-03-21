@@ -104,8 +104,8 @@ typedef struct
 //!  Alogorytmy przetwarzania obiektów i mapy
 //@{ @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
-static short xSize = 12;
-static short ySize = 12;
+static short xSize = 22;
+static short ySize = 22;
 
 static PUNKT_MAPY* mapa;
 static DEF_GRUNT defGrunt[] = {
@@ -147,9 +147,9 @@ void PusteTabele(void)
   ileGrunt  = 0;
   ileRoslin = 0;
   ileZwierz = 0;
-  memset(listaGrunt,  0, sizeof(listaGrunt));
-  memset(listaRoslin, 0, sizeof(listaRoslin));
-  memset(listaZwierz, 0, sizeof(listaZwierz));
+  memset(listaGrunt,  0, sizeof(OBIEKTINFO_GRUNT)  * (xSize * ySize +1));
+  memset(listaRoslin, 0, sizeof(OBIEKTINFO_ROSLINA)* (xSize * ySize +1));
+  memset(listaZwierz, 0, sizeof(OBIEKTINFO_ZWIERZ) * (xSize * ySize +1));
   martwe = 0;
 } // PusteTabele
 
@@ -260,7 +260,7 @@ void ZapelnijMape(void)
       // roœliny
       //if (y%2) // tylko kilka rz¹dków roœliny zwyk³ej (typ 0)
         DodajRosline(x, y, 0);
-      if (x==y && x < 3)
+      if (x==y)
         DodajZwierz(x, y, 0); // gatunek "0"
       }
 // DodajZwierz(1, 1, 0);
@@ -278,8 +278,8 @@ short losowe[24][4] = { // wszystkie mo¿liwe kolejnoœci dla 4 elementów
 void UstalRandom4(short* num4)
 {
   short a;
-//  a = random(24); // wybierz - która kolejnoœæ z 24 zostanie u¿yta
-  a = 1;
+  a = random(24); // wybierz - która kolejnoœæ z 24 zostanie u¿yta
+//  a = 1;
   num4[0] = losowe[a][0];
   num4[1] = losowe[a][1];
   num4[2] = losowe[a][2];
@@ -431,7 +431,7 @@ short WybierzFood(short x1, short y1, short* destX, short* destY, DEF_ZWIERZ* de
     tmpY = y1 + waz_y[ ktore[a] ];
     if (CzyPunktZakres(tmpX, tmpY)==0) // punkt wyszed³ poza mapê, pomiñ go
       continue;
-    if (a < 5)
+    if (a < 5 && CzyMapaZwierz(tmpX, tmpY)==0) // gdy miejsce wolne
       {
       wolneX = tmpX;
       wolneY = tmpY;
@@ -537,9 +537,20 @@ short WybierzDlaNowego(short x1, short y1, short* destX, short* destY)
 } // WybierzDlaNowego
 
 //---------------------------------------------------------------------------
+//! Ustal pozycjê na podstawie id
+short Id2PozZwierz(short id)
+{
+  short a;
+  for (a=0; a<ileZwierz; a++)
+    if (listaZwierz[a].z_id == id)
+      return a; // pozycja pasuj¹cego
+  return 0; // gdy nie znaleziono
+} // Id2PozZwierz
+
+//---------------------------------------------------------------------------
 // Przetwórz roœlinê z listy
 void ProcessRoslina(short poz)
-{                         
+{
   OBIEKTINFO_ROSLINA* ptrRoslina;
   DEF_ROSLINA* ptrDef;
 
@@ -623,6 +634,32 @@ void UsunMartwego(short poz)
 } // UsunMartwego
 
 //---------------------------------------------------------------------------
+//! SprawdŸ czy wê¿owe g³owy s¹ na miejscu
+void TestMapy(void)
+{
+  short a, max, x,y;
+  PUNKT_MAPY* ptrMapa=NULL;
+
+  max = ileZwierz; // ustal iloœæ przed - nowo dodane nie bêd¹ uwzglêdnione
+  for (a=0; a<max; a++)
+    {
+    OBIEKTINFO_ZWIERZ* ptrZ1; // zwierz przetwarzany
+    ptrZ1 = listaZwierz+a;
+    if (ptrZ1->z_def != -1) // pomijaj usuniête
+      {
+      x = ptrZ1->z_common.x;
+      y = ptrZ1->z_common.y;
+      ptrMapa = PtrPunktMapy(x, y);
+      if (x != ptrZ1->z_x[0]
+        ||y != ptrZ1->z_y[0])
+        printf("Niezgodne wspolrzedne w zwierzu");
+      if (ptrMapa->pm_zwierz.pm1_poz != a)
+        printf("Niezgodne wspolrzedne lub typ na mapie (%u)", a);
+      }
+    }
+} // TestMapy
+
+//---------------------------------------------------------------------------
 // Przetwórz zwierzê z listy
 void ProcessZwierz(short poz)
 {
@@ -656,13 +693,11 @@ void ProcessZwierz(short poz)
       {
       poz2 = GetPozZwierz(mapDestX, mapDestY);
       ptrZ2 = listaZwierz+poz2;
-      if (ptrZ1->z_zapas < defZ1->dz_maxZapas)
-        {
-        // tylko gdy nie jest pe³ny
-        defZ2 = defZwierz + ptrZ2->z_def;
-        ptrZ1->z_zapas += defZ2->dz_kalorie;
-        UsunMartwego(poz2);
-        }
+      defZ2 = defZwierz + ptrZ2->z_def;
+      ptrZ1->z_zapas += defZ2->dz_kalorie;
+      if (ptrZ1->z_zapas > defZ1->dz_maxZapas)
+        ptrZ1->z_zapas = defZ1->dz_maxZapas;
+      UsunMartwego(poz2);
       }
     else if (RoslinaJadalna(mapDestX, mapDestY))
       {
@@ -671,15 +706,13 @@ void ProcessZwierz(short poz)
         {
         defR = defRoslina + listaRoslin[poz2].r_def;
         listaRoslin[poz2].r_poziom = 0;
-        if (ptrZ1->z_zapas < defZ1->dz_maxZapas)
-          {
-          // tylko gdy nie jest pe³ny
-          ptrZ1->z_zapas += defR->dr_kalorie;
-          }
+        ptrZ1->z_zapas += defR->dr_kalorie;
+        if (ptrZ1->z_zapas > defZ1->dz_maxZapas)
+          ptrZ1->z_zapas = defZ1->dz_maxZapas;
         }
       }
     }
-
+  TestMapy();
   if (mapDestX != mapSrcX
     ||mapDestY != mapSrcY) // tylko gdy zmienia miejsce
     {
@@ -692,7 +725,7 @@ void ProcessZwierz(short poz)
     else // tylko przesuñ
       PrzesunZwierz(poz, mapSrcX, mapSrcY, mapDestX, mapDestY, 0);
     }
-
+  TestMapy();
   // 2. ewentualne rozmna¿anie
   if (ptrZ1->z_zapas >= defZ1->dz_maxZapas) // s¹ nadwy¿ki do wydania
     {
@@ -706,14 +739,15 @@ void ProcessZwierz(short poz)
       DodajZwierz(mapNewX, mapNewY, ptrZ1->z_def);
       }
     }
+  TestMapy();
   //=== 3.na koniec - zmniejsz zapas
   if (ptrZ1->z_zapas > 0)
     ptrZ1->z_zapas--;
 
   if (ptrZ1->z_zapas <= 0)
     UsunMartwego(poz);
+  TestMapy();    
 } // ProcessZwierz
-
 
 //---------------------------------------------------------------------------
 //! Usuñ zw³oki z listy
@@ -727,7 +761,7 @@ void UsunMartwe(void)
       {
       if (poz != (ileZwierz-1)) // to nie jest ostatni
         {
-        memmove(listaZwierz+poz, listaZwierz+poz+1, sizeof(listaZwierz[0])*(ileZwierz-poz-1));
+        memmove(listaZwierz+poz, listaZwierz+poz+1, sizeof(OBIEKTINFO_ZWIERZ)*(ileZwierz-poz-1));
 
         // przenumeruj obiekty na mapie (o -1)
         short a;
@@ -751,19 +785,6 @@ void UsunMartwe(void)
 } // UsunMartwe
 
 //---------------------------------------------------------------------------
-/*void TestMapy(void)
-{
-  short x,y;
-  PUNKT_MAPY* ptrMapa=NULL;
-
-  for (y=0; y<ySize; y++)
-    for (x=0; x<xSize; x++)
-      {
-      ptrMapa = PtrPunktMapy(x, y);
-      }
-} // TestMapy
-*/
-//---------------------------------------------------------------------------
 //! Przetwarzanie obiektow o 1 jednostkê czasu
 void PrzetworzMape(void)
 {
@@ -772,7 +793,7 @@ void PrzetworzMape(void)
   ileGen++;
   // przegl¹danie kolejnych obiektów jest szybsze ni¿ przegl¹danie wg mapy
   // nie tracimy czasu na puste komórki
-  //TestMapy();
+  TestMapy();
   max = ileRoslin; // ustal iloœæ przed - nowo dodane nie bêd¹ uwzglêdnione
   for (poz=0; poz<max; poz++)
     ProcessRoslina(poz);
@@ -939,7 +960,7 @@ void DrukujZnakMapy(short x, short y, short zwierz)
     {
     poz = ptr->pm_zwierz.pm1_poz;
     if (zwierz == -1  // bierz wszystkie
-      ||zwierz == poz)// bierz konkretnie tego
+      ||zwierz == listaZwierz[poz].z_id)// bierz konkretnie tego
       {
       if (listaZwierz[poz].z_def == 0)
         SetTextColor(FOREGROUND_GREEN);
@@ -950,13 +971,48 @@ void DrukujZnakMapy(short x, short y, short zwierz)
     }
   PutZnak(znak);
 } // DrukujZnakMapy
+/*
+  short z_def; // która definicja w³aœciwoœci
+  OBIEKTINFO_COMMON z_common; // informacje bazowe, systemowe
+
+  // dane indywidualne obiektu
+  short z_zapas;  // bie¿acy poziom zapasu ¿ywnoœci
+  short z_x[MAX_SIZE+1];// wspó³rzêdne wszystkich segmentów
+  short z_y[MAX_SIZE+1];
+  short z_size;
+  short z_id; // unikalny numer
+*/
+//---------------------------------------------------------------------------
+//! Wydrukuj do oddzielnego pliku txt zrzut stanu wskazanego wê¿a
+void Waz2Plik(short poz)
+{
+  OBIEKTINFO_ZWIERZ* ptrZ;
+  short a;
+  ptrZ = listaZwierz+poz;
+  printf("\n");  
+  printf("z_def: %u  \n", ptrZ->z_def);
+  printf("z_zapas: %u  \n", ptrZ->z_zapas);
+  printf("z_size: %u  \n", ptrZ->z_size);
+  printf("z_id: %u  \n", ptrZ->z_id);
+  printf("x: %u  \n", ptrZ->z_common.x);
+  printf("y: %u  \n", ptrZ->z_common.y);
+  for (a=0; a<ptrZ->z_size; a++)
+    {
+    printf("PKT %u: x=%u y=%u           \n", a, ptrZ->z_x[a], ptrZ->z_y[a]);
+    }
+  printf("====================================");  
+} // Waz2Plik
 
 //---------------------------------------------------------------------------
 //! Wyrzuæ stan mapy na standard output, wszystkie zwierza (-1) lub wskazany
-void DrukujMape(short zwierz)
+void DrukujMape(short idZwierz)
 {
   short x, y;
   short a, wazA, wazB;
+  short poz=0;
+
+  if (idZwierz != -1)
+    poz = Id2PozZwierz(idZwierz);
   wazA = 0;
   wazB = 0;
   for (a=0; a<ileZwierz;a++)
@@ -972,21 +1028,25 @@ void DrukujMape(short zwierz)
   printf("MAPA %ux%u: %lu (+%u)      \n", xSize, ySize, ileGen, czestoPokaz);
   printf("weze: %u %u   \n", wazA, wazB);
   printf("dead: %lu   \n", martwe);
-  if (zwierz == -1)
+  if (idZwierz == -1)
     printf("wszystkie                       ");
   else
-    printf("tylko: %u [id=%u]  ", zwierz, (unsigned)listaZwierz[zwierz].z_id);
+    {
+    printf("tylko: poz=%u id=%u    ", poz, (unsigned)listaZwierz[poz].z_id);
+    }
   printf("\n");
   for (y=0; y<ySize; y++)
     {
     for (x=0; x<xSize; x++)
-      DrukujZnakMapy(x,y, zwierz);
+      DrukujZnakMapy(x,y, idZwierz);
     printf("\n"); // koniec linii
     }
   printf("\n");
   SetTextColor(FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
   printf("Wcisnij SPACJE, 1,2,3,4,5 q(koniec)");
-  printf("\n");  
+  printf("\n");
+  if (idZwierz != -1)
+    Waz2Plik(poz);
 } // DrukujMape
 
 /*
@@ -1001,7 +1061,8 @@ Parametry wywo³ania:
 int main(int argc, char* argv[])
 {
   short a, znak = ' ';
-  short ktoryZwierz = -1; // -1 oznacz wszystkie
+  short ktory;
+  short idZwierz = -1; // -1 oznacz wszystkie
   if (argc >= 3)
     {
     a = atoi(argv[1]);
@@ -1029,7 +1090,7 @@ int main(int argc, char* argv[])
   ileGen = 0;
   PusteTabele();
   ZapelnijMape();
-  DrukujMape(ktoryZwierz);
+  DrukujMape(idZwierz);
   znak = getch(); // praca krokowa
 
   _next:
@@ -1038,7 +1099,7 @@ int main(int argc, char* argv[])
   _pokaz: // tylko wyœwietl inaczej, bez przetwarzania
   if ((ileGen % czestoPokaz)==0)
     {
-    DrukujMape(ktoryZwierz);
+    DrukujMape(idZwierz);
     znak = getch(); // praca krokowa
     }
   SetTextColor(FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
@@ -1054,14 +1115,22 @@ int main(int argc, char* argv[])
     czestoPokaz = 10000;
   if (znak == 'd')
     {
-    ktoryZwierz++;
-    if (ktoryZwierz >= ileZwierz)
-      ktoryZwierz = 0;
+    if (idZwierz == -1)
+      idZwierz = listaZwierz[0].z_id; // nie by³o ¿adnego - to id pierwszego
+    else
+      {
+      short poz;
+      poz = Id2PozZwierz(idZwierz);
+      poz++;
+      if (poz >= ileZwierz)
+        poz = 0;
+      idZwierz = listaZwierz[poz].z_id;
+      }
     goto _pokaz;
     }
   if (znak == 'w')
     {
-    ktoryZwierz = -1; // znowu pokazuj wszystkie
+    idZwierz = -1; // znowu pokazuj wszystkie
     goto _pokaz;
     }
   if (znak == 'q')
