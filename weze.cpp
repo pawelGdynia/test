@@ -82,7 +82,7 @@ typedef struct // info wspólne dla wszystkich wyst¹pieñ
 static DEF_ZWIERZ defZwierz[] = {
 // Rosl Drap Zapas Kalorie  maxSize Utrata Zasieg
   {1,   0,     10,      20,      1,     5,    3},
-  {0,   1,     20,      10,      10,     5,    3},
+  {0,   1,     90,      10,     10,     5,    3},
   };
 #define ILE_DEFZWIERZ (sizeof(defZwierz)/sizeof(defZwierz[0]))
 
@@ -881,18 +881,18 @@ short PunktWlasnyZwierz(OBIEKTINFO_ZWIERZ* ptrZ1, short x, short y)
 } // PunktWlasnyZwierz
 
 //---------------------------------------------------------------------------
-//! Czy kierunek wybrany z rêki? 1234=tak, 0=nie
+//! Czy kierunek wybrany z rêki? 1234=tak, 0=nie, litery to kody extended x getch()
 short WybranyKierunek(void)
 {
   switch (kierunek)
     {
-    case 'w':
+    case 'H':
       return 1; // góra
-    case 'a':
+    case 'K':
       return 2; // lewo
-    case 's':
+    case 'M':
       return 3; // prawo
-    case 'z':
+    case 'P':
       return 4; // dó³
     }
   return 0; // ¿aden z nich
@@ -1060,7 +1060,7 @@ char ZnakWeza(short x, short y, short debug)
         {
         // g³owa ma literkê
         znak = 'A' + ptrZ->z_zapas -1;
-        if (znak > 'Z')
+        if (ptrZ->z_zapas > 24)
           znak = '$';
         return znak;
         }
@@ -1228,8 +1228,13 @@ Parametry wywo³ania:
 int main(int argc, char* argv[])
 {
   short a, znak = ' ';
+  char extended;
   short ktory;
+  char bufor[5];
+  unsigned long ile;
+  INPUT_RECORD ir;
 
+  SetConsoleTitle(argv[0]);
   if (argc >= 3)
     {
     a = atoi(argv[1]);
@@ -1267,7 +1272,11 @@ int main(int argc, char* argv[])
     {
     DrukujMape(idZwierz);
     znak = getch(); // praca krokowa
-    kierunek = znak;    
+    kierunek = 0;
+    if (znak==0)
+      {
+      kierunek = getch(); // HMKP
+      }
     }
   SetTextColor(FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
   if (znak == '1')
