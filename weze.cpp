@@ -81,8 +81,8 @@ typedef struct // info wspólne dla wszystkich wyst¹pieñ
 
 static DEF_ZWIERZ defZwierz[] = {
 // Rosl Drap Zapas Kalorie  maxSize Utrata Zasieg
-  {1,   0,     10,      20,      10,     5,    2},
-  {0,   1,     20,      10,      10,     5,    2},
+  {1,   0,     10,      20,      1,     5,    3},
+  {0,   1,     20,      10,      10,     5,    3},
   };
 #define ILE_DEFZWIERZ (sizeof(defZwierz)/sizeof(defZwierz[0]))
 
@@ -133,6 +133,8 @@ static short ileGrunt =0;
 static short ileRoslin=0;
 static short ileZwierz=0;
 static short maxZwierzId=0;
+static char  kierunek = ' '; //!< kierunek wklepany przez operatora
+static short idZwierz = 1;   //!< -1 oznacz wszystkie
 //---------------------------------------------------------------------------
 //! Zwraca adres punktu na mapie, niezale¿nie od wewnêtrznej organizacji
 PUNKT_MAPY* PtrPunktMapy(short x, short y)
@@ -838,6 +840,44 @@ void UsunMartwe(void)
 } // UsunMartwe
 
 //---------------------------------------------------------------------------
+//! Przesuñ rêcznie zwierza, wg
+void RuchManual(short poz)
+{
+  short typ = WybranyKierunek(); // ustal 1234
+  switch (typ)
+    {
+    case 1:
+      x +=  0;
+      y += -1;
+      break;
+
+    case 2:
+      x += -1;
+      y +=  0;
+      break;
+     .
+    }
+} // RuchManual
+
+//---------------------------------------------------------------------------
+//! Czy kierunek wybrany z rêki? 1234=tak, 0=nie
+short WybranyKierunek(void)
+{
+  switch (kierunek)
+    {
+    case 'w':
+      return 1; // góra
+    case 'a':
+      return 2; // lewo
+    case 's':
+      return 3; // prawo
+    case 'z':
+      return 4; // dó³
+    }
+  return 0; // ¿aden z nich
+} // WybranyKierunek
+
+//---------------------------------------------------------------------------
 //! Przetwarzanie obiektow o 1 jednostkê czasu
 void PrzetworzMape(void)
 {
@@ -854,8 +894,13 @@ void PrzetworzMape(void)
   // zwierzêta
   max = ileZwierz; // ustal iloœæ przed - nowo dodane nie bêd¹ uwzglêdnione
   for (poz=0; poz<max; poz++)
-    ProcessZwierz(poz);
-
+    {
+    if (listaZwierz[poz].z_id == idZwierz // ten jest przetwarzany
+      &&WybranyKierunek() > 0)
+      RuchManual(poz);
+    else
+      ProcessZwierz(poz);
+    }
   // usuñ martwe z listy
   UsunMartwe();
 
@@ -962,11 +1007,11 @@ char ZnakWeza(short x, short y, short debug)
           znak = '$';
         return znak;
         }
-      else
-        {
-        if (debug) // w trybie debug pokazuj cyferki
-          return '0'+a;
-        }
+//      else
+//        {
+//        if (debug) // w trybie debug pokazuj cyferki
+//          return '0'+a;
+//        }
       // zwyk³e znaki segmentowe
       memset(bs, 0, sizeof(bs));
       t = TypSasiada(ptrZ->z_x[a], ptrZ->z_y[a], ptrZ->z_x[a-1], ptrZ->z_y[a-1]);
@@ -1012,13 +1057,23 @@ void DrukujZnakMapy(short x, short y, short zwierz)
   if (CzyMapaZwierz(x,y)) // jest zwierz w tabeli
     {
     poz = ptr->pm_zwierz.pm1_poz;
-    if (zwierz == -1  // bierz wszystkie
-      ||zwierz == listaZwierz[poz].z_id)// bierz konkretnie tego
+//    if (zwierz == -1  // bierz wszystkie
+//      ||zwierz == listaZwierz[poz].z_id)// bierz konkretnie tego
       {
       if (listaZwierz[poz].z_def == 0)
-        SetTextColor(FOREGROUND_GREEN);
+        {
+        if (zwierz == listaZwierz[poz].z_id)
+          SetTextColor(FOREGROUND_GREEN | FOREGROUND_INTENSITY);
+        else
+          SetTextColor(FOREGROUND_GREEN);
+        }
       else // 2
-        SetTextColor(FOREGROUND_RED);
+        {
+        if (zwierz == listaZwierz[poz].z_id)
+          SetTextColor(FOREGROUND_RED | FOREGROUND_INTENSITY);
+        else
+          SetTextColor(FOREGROUND_RED);
+        }
       znak[0] = ZnakWeza(x,y, zwierz != -1);
       }
     }
@@ -1042,7 +1097,7 @@ void Waz2Plik(short poz)
   OBIEKTINFO_ZWIERZ* ptrZ;
   short a;
   ptrZ = listaZwierz+poz;
-  printf("\n");  
+  printf("\n");
   printf("z_def: %u  \n", ptrZ->z_def);
   printf("z_zapas: %u  \n", ptrZ->z_zapas);
   printf("z_size: %u  \n", ptrZ->z_size);
@@ -1053,7 +1108,7 @@ void Waz2Plik(short poz)
     {
     printf("PKT %u: x=%u y=%u           \n", a, ptrZ->z_x[a], ptrZ->z_y[a]);
     }
-  printf("====================================");  
+  printf("====================================");
 } // Waz2Plik
 
 //---------------------------------------------------------------------------
@@ -1097,7 +1152,8 @@ void DrukujMape(short idZwierz)
   printf("\n");
   SetTextColor(FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
   printf("Wcisnij SPACJE, 1,2,3,4,5 q(koniec)\n");
-  printf("d(debug 1) w(wszystkie)\n");
+  printf("d(debug 1) f(wszystkie)\n");
+  printf("aswz - kierunek ruchu\n");
   printf("\n");
   if (idZwierz != -1)
     Waz2Plik(poz);
@@ -1116,7 +1172,7 @@ int main(int argc, char* argv[])
 {
   short a, znak = ' ';
   short ktory;
-  short idZwierz = -1; // -1 oznacz wszystkie
+
   if (argc >= 3)
     {
     a = atoi(argv[1]);
@@ -1146,7 +1202,7 @@ int main(int argc, char* argv[])
   ZapelnijMape();
   DrukujMape(idZwierz);
   znak = getch(); // praca krokowa
-
+  kierunek = znak;
   _next:
   PrzetworzMape();
 
@@ -1182,7 +1238,7 @@ int main(int argc, char* argv[])
       }
     goto _pokaz;
     }
-  if (znak == 'w')
+  if (znak == 'f')
     {
     idZwierz = -1; // znowu pokazuj wszystkie
     goto _pokaz;
