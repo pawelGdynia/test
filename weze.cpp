@@ -35,8 +35,8 @@ static DEF_ROSLINA defRoslina[] = {
 #define ILE_DEFROSLINA (sizeof(defRoslina)/sizeof(defRoslina[0]))
 
 static DEF_ZWIERZ defZwierz[] = {
-  {10, 1, 0}, // 0, roœlino¿erca
-  {10, 1, 1}, // 1, drapie¿nik
+  {10, 1, 0, 3}, // 0: roœlino¿erca
+  {10, 1, 1, 3}, // 1: drapie¿nik
   };
 #define ILE_DEFZWIERZ (sizeof(defZwierz)/sizeof(defZwierz[0]))
 
@@ -93,7 +93,7 @@ void DodajGrunt(short x, short y, short id)
   listaGrunt[ileGrunt].g_common.y = y;
   listaGrunt[ileGrunt].g_common.po= 0; // nieprzetworzony
   // dok³adne info o obiekcie
-  listaGrunt[ileGrunt].g_defpoz = id;
+  listaGrunt[ileGrunt].g_def = id;
 
   ileGrunt++;
 } // DodajGrunt
@@ -118,7 +118,7 @@ void DodajRosline(short x, short y, short id)
   listaRoslin[ileRoslin].r_common.y = y;
   listaRoslin[ileRoslin].r_common.po= 0; // nieprzetworzony
   // dok³adne info o obiekcie
-  listaRoslin[ileRoslin].r_defpoz = id;
+  listaRoslin[ileRoslin].r_def = id;
   // poziom wzrostu - ustaw maksymalny
   listaRoslin[ileRoslin].r_poziom = defRoslina[id].dr_czasWzrostu;
 
@@ -129,24 +129,29 @@ void DodajRosline(short x, short y, short id)
 //! Dopisz na mapie dane zwierza
 void DodajZwierz(short x, short y, short id)
 {
-  PUNKT_MAPY* ptr;
+  PUNKT_MAPY* ptrMapa;
+  OBIEKTINFO_ZWIERZ* ptrZ;
+  DEF_ZWIERZ* ptrDef;      // definicja
+
   if (ileZwierz >= xSize * ySize)
     {
     printf("E:DodajZwierz()");
     return; // nie dodawaj - nie ma miejsca
     }
-  ptr = PtrPunktMapy(x,y);
+  ptrMapa = PtrPunktMapy(x,y);
+  ptrZ = listaZwierz+ileZwierz;
+  ptrDef = defZwierz + id;
   // info w samej mapie
-  ptr->pm_zwierz.pm1_tab = TAB_ZWIERZ;
-  ptr->pm_zwierz.pm1_poz = ileZwierz;
+  ptrMapa->pm_zwierz.pm1_tab = TAB_ZWIERZ;
+  ptrMapa->pm_zwierz.pm1_poz = ileZwierz;
 
   // info w obiekcie
-  listaZwierz[ileZwierz].z_common.x = x;
-  listaZwierz[ileZwierz].z_common.y = y;
-  listaZwierz[ileZwierz].z_common.po= 0; // nieprzetworzony
+  ptrZ->z_common.x = x;
+  ptrZ->z_common.y = y;
+  ptrZ->z_common.po= 0; // nieprzetworzony
   // dok³adne info o obiekcie
-  listaZwierz[ileZwierz].z_defpoz = id;
-  listaZwierz[ileZwierz].z_zapas = 5;
+  ptrZ->z_def = id;
+  ptrZ->z_zapas = ptrDef->dz_maxZapas-2; // max -2
 
   ileZwierz++;
 } // DodajZwierz
@@ -236,7 +241,7 @@ short CzyMapaZwierz(short x, short y)
 
   if (ptr->pm_zwierz.pm1_tab == 0)
     return 0; // nie ma tam nikogo
-  ptrDef = defZwierz + listaZwierz[ptr->pm_zwierz.pm1_poz].z_defpoz;
+  ptrDef = defZwierz + listaZwierz[ptr->pm_zwierz.pm1_poz].z_def;
   if (ptrDef->dz_drapieznik > 0)
     return 2; // jest drapie¿nik
 
@@ -267,7 +272,7 @@ short RoslinaJadalna(short x, short y)
 
   poz = GetPozRoslina(x,y); // która roœlina z listy
   ptrRoslina = listaRoslin+poz;
-  ptrDef    = defRoslina + ptrRoslina->r_defpoz;
+  ptrDef    = defRoslina + ptrRoslina->r_def;
 
   //-----------
   if (ptrRoslina->r_poziom == ptrDef->dr_czasWzrostu)
@@ -395,7 +400,7 @@ void ProcessRoslina(short poz)
   DEF_ROSLINA* ptrDef;
 
   ptrRoslina = listaRoslin+poz;
-  ptrDef     = defRoslina + ptrRoslina->r_defpoz;
+  ptrDef     = defRoslina + ptrRoslina->r_def;
 
   if (ptrRoslina->r_poziom < ptrDef->dr_czasWzrostu)
     ptrRoslina->r_poziom++; // wzrost +1
@@ -417,12 +422,13 @@ void ProcessZwierz(short poz)
 
   OBIEKTINFO_ZWIERZ* ptrZ2; // zwierz zjadany
   DEF_ZWIERZ* defZ2;        // definicja
+  DEF_ROSLINA* defR;        // definicja
 
   ptrZ1 = listaZwierz+poz;
-  if (ptrZ1->z_defpoz < 0) // pomijaj martwe (czyli ujemne)
+  if (ptrZ1->z_def < 0) // pomijaj martwe (czyli ujemne)
     return;
 
-  defZ1 = defZwierz + (ptrZ1->z_defpoz);
+  defZ1 = defZwierz + (ptrZ1->z_def);
   mapSrcX = ptrZ1->z_common.x;
   mapSrcY = ptrZ1->z_common.y;
 
@@ -438,19 +444,27 @@ void ProcessZwierz(short poz)
       {
       poz2 = GetPozZwierz(mapDestX, mapDestY);
       ptrZ2 = listaZwierz+poz2;
-      ptrZ2->z_zapas = 0; // wyzeruj zjedzonego
-      ptrZ2->z_defpoz= -1;
       if (ptrZ1->z_zapas < defZ1->dz_maxZapas)
-        ptrZ1->z_zapas += 5;
+        {
+        // tylko gdy nie jest pe³ny
+        defZ2 = defZwierz + ptrZ2->z_def;
+        ptrZ1->z_zapas += defZ2->dz_kalorie;
+        ptrZ2->z_zapas = 0; // wyzeruj zjedzonego
+        ptrZ2->z_def= -1;
+        }
       }
     else if (RoslinaJadalna(mapDestX, mapDestY))
       {
       poz2 = GetPozRoslina(mapDestX, mapDestY);
       if (CzyMapaRoslina(mapDestX, mapDestY)) // jest trawa w tabeli
         {
+        defR = defRoslina + listaRoslin[poz2].r_def;
         listaRoslin[poz2].r_poziom = 0;
         if (ptrZ1->z_zapas < defZ1->dz_maxZapas)
-          ptrZ1->z_zapas += 3;
+          {
+          // tylko gdy nie jest pe³ny
+          ptrZ1->z_zapas += defR->dr_kalorie;
+          }
         }
       }
     }
@@ -483,7 +497,7 @@ void ProcessZwierz(short poz)
     ptrDst->pm_zwierz.pm1_poz = 0;
 
     // 2.oznakuj w tabeli jako martwy
-    listaZwierz[poz].z_defpoz = -1;
+    listaZwierz[poz].z_def = -1;
     }
   // rozmna¿anie
   if (ptrZ1->z_zapas >= defZ1->dz_maxZapas) // s¹ nadwy¿ki do wydania
@@ -495,7 +509,7 @@ void ProcessZwierz(short poz)
     if (ok)
       {
       ptrZ1->z_zapas -= 5; // zmniejsz poziom zapasu matce
-      DodajZwierz(mapNewX, mapNewY, ptrZ1->z_defpoz);
+      DodajZwierz(mapNewX, mapNewY, ptrZ1->z_def);
       }
     }
 } // ProcessZwierz
@@ -508,7 +522,7 @@ void UsunMartwe(void)
   PUNKT_MAPY* ptrSrc=NULL;
 
   for (poz=ileZwierz-1; poz>=0; poz--)
-    if (listaZwierz[poz].z_defpoz == -1) // do usuniêcia
+    if (listaZwierz[poz].z_def == -1) // do usuniêcia
       {
       if (poz != (ileZwierz-1)) // to nie jest ostatni
         {
@@ -620,7 +634,7 @@ void DrukujZnakMapy(short x, short y)
     {
     poz = GetPozZwierz(x,y);
     znak[0] = 'A' + listaZwierz[poz].z_zapas -1;
-    if (listaZwierz[poz].z_defpoz == 0)
+    if (listaZwierz[poz].z_def == 0)
       SetTextColor(FOREGROUND_BLUE);
     else // 2
       SetTextColor(FOREGROUND_RED);
@@ -639,7 +653,7 @@ void DrukujMape(void)
   for (a=0; a<ileZwierz;a++)
     {
     OBIEKTINFO_ZWIERZ* ptrZ1 = listaZwierz+a;
-    if (ptrZ1->z_defpoz == 0)
+    if (ptrZ1->z_def == 0)
       wazA++;
     else
       wazB++;

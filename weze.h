@@ -38,7 +38,7 @@ typedef struct // info wspólne dla wszystkich wyst¹pieñ
 
 typedef struct // info dla jednego punktu
   {
-  short g_defpoz;              // która definicja w³aœciwoœci
+  short g_def;              // która definicja w³aœciwoœci
   OBIEKTINFO_COMMON g_common; // informacje bazowe, systemowe
 
   // dane indywidualne obiektu: brak
@@ -53,7 +53,7 @@ typedef struct // info wspólne dla wszystkich wyst¹pieñ
 
 typedef struct
   {
-  short r_defpoz; // która definicja w³aœciwoœci
+  short r_def; // która definicja w³aœciwoœci
   OBIEKTINFO_COMMON r_common; // informacje bazowe, systemowe
 
   // dane indywidualne obiektu
@@ -65,7 +65,8 @@ typedef struct // info wspólne dla wszystkich wyst¹pieñ
   {
   short dz_maxZapas;  // ile zasobow (trawy) mo¿e przechowaæ
   short dz_roslinozerca;
-  short dz_drapieznik;    
+  short dz_drapieznik;
+  short dz_kalorie;
   //short defz_maxModul;  // do ilu modu³ów mo¿e rosn¹æ
 
   //short defz_zapNowyMod;// ile zasobów ¿ywnoœci trzeba na wzrost o 1 modu³
@@ -74,7 +75,7 @@ typedef struct // info wspólne dla wszystkich wyst¹pieñ
 
 typedef struct
   {
-  short z_defpoz; // która definicja w³aœciwoœci
+  short z_def; // która definicja w³aœciwoœci
   OBIEKTINFO_COMMON z_common; // informacje bazowe, systemowe
 
   // dane indywidualne obiektu
