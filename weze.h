@@ -7,10 +7,11 @@
 #define TAB_ROSLINA 2
 #define TAB_ZWIERZ  3
 
+#define MAX_SIZE 12
 typedef struct
   {
   short pm1_tab; // TAB_*: w której tabeli obiektów znajduje siê opis
-  short pm1_poz; // pozycja w tabeli dla wskazanego typu 
+  short pm1_poz; // pozycja w tabeli dla wskazanego typu
   } PUNKT_MAPY1;
 
 // dane 1 punktu na mapie
@@ -24,7 +25,7 @@ typedef struct
 // W³aœciwoœci WSPÓLNE
 typedef struct
   {
-  short x;  // wspó³rzêdna x na mapie
+  short x;  // wspó³rzêdna x na mapie (g³owa dla zwierza)
   short y;  // wspó³rzêdna y na mapie
   short po; // czy po przetworzeniu
   } OBIEKTINFO_COMMON;
@@ -66,8 +67,8 @@ typedef struct // info wspólne dla wszystkich wyst¹pieñ
   short dz_maxZapas;  // ile zasobow (trawy) mo¿e przechowaæ
   short dz_roslinozerca;
   short dz_drapieznik;
-  short dz_kalorie;
-  //short defz_maxModul;  // do ilu modu³ów mo¿e rosn¹æ
+  short dz_kalorie;    // ile punktow daje zjedzenie go
+  short defz_maxSize;  // do ilu modu³ów mo¿e rosn¹æ
 
   //short defz_zapNowyMod;// ile zasobów ¿ywnoœci trzeba na wzrost o 1 modu³
   //short defz_zasieg;    // zasiêg widocznoœci - do analizy
@@ -80,6 +81,9 @@ typedef struct
 
   // dane indywidualne obiektu
   short z_zapas;  // bie¿acy poziom zapasu ¿ywnoœci
+  short z_x[MAX_SIZE];// wspó³rzêdne wszystkich segmentów
+  short z_y[MAX_SIZE];
+  short z_size;
   } OBIEKTINFO_ZWIERZ;
 
 

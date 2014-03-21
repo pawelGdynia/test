@@ -18,8 +18,8 @@
 //!  Alogorytmy przetwarzania obiektów i mapy
 //@{ @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
-static short xSize = 60;
-static short ySize = 60;
+static short xSize = 50;
+static short ySize = 50;
 
 static PUNKT_MAPY* mapa;
 static DEF_GRUNT defGrunt[] = {
@@ -153,6 +153,10 @@ void DodajZwierz(short x, short y, short id)
   ptrZ->z_def = id;
   ptrZ->z_zapas = ptrDef->dz_maxZapas-2; // max -2
 
+  // lista segmentów - dok³adnie jeden
+  ptrZ->z_x[0] = x;
+  ptrZ->z_y[0] = y;
+  ptrZ->z_size = 1;
   ileZwierz++;
 } // DodajZwierz
 
@@ -171,10 +175,10 @@ void ZapelnijMape(void)
       // roœliny
       //if (y%2) // tylko kilka rz¹dków roœliny zwyk³ej (typ 0)
         DodajRosline(x, y, 0);
-      if (x==y)
-        DodajZwierz(x, y, 0); // gatunek "0"
+      //if (x==y)
+      //  DodajZwierz(x, y, 0); // gatunek "0"
       }
- DodajZwierz(5, 1, 1); // gatunek "1"
+ DodajZwierz(1, 1, 0);
 } // ZapelnijMape
 
 short losowe[24][4] = { // wszystkie mo¿liwe kolejnoœci dla 4 elementów
@@ -395,7 +399,7 @@ short WybierzDlaNowego(short x1, short y1, short* destX, short* destY)
 //---------------------------------------------------------------------------
 // Przetwórz roœlinê z listy
 void ProcessRoslina(short poz)
-{
+{                         
   OBIEKTINFO_ROSLINA* ptrRoslina;
   DEF_ROSLINA* ptrDef;
 
@@ -407,6 +411,90 @@ void ProcessRoslina(short poz)
 } // ProcessRoslina
 
 //---------------------------------------------------------------------------
+//! Przemieœæ w nowe miejsce, z dodaniem nowego segmentu lub nie
+void PrzesunZwierz(short poz, short srcX, short srcY, short dstX, short dstY, short plus)
+{
+  short a;
+  PUNKT_MAPY* ptrMapa=NULL;
+  OBIEKTINFO_ZWIERZ* ptrZ;
+
+  ptrZ = listaZwierz+poz;
+//  ptrSrc = PtrPunktMapy(srcX, srcY);
+//  ptrMapa= PtrPunktMapy(dstX, dstY);
+
+  //====== MAPA: przesuwanie info o g³owie =====================
+  // przepisz dane ze starego miejsca do nowego
+//  ptrDst->pm_zwierz.pm1_tab = ptrSrc->pm_zwierz.pm1_tab;
+//  ptrDst->pm_zwierz.pm1_poz = ptrSrc->pm_zwierz.pm1_poz;
+
+  // wyma¿ w starym miejscu na mapie
+//  ptrSrc->pm_zwierz.pm1_tab = 0;
+//  ptrSrc->pm_zwierz.pm1_poz = 0;
+
+  // w tabeli zwierz zmieñ wspó³rzêdn¹ g³owy na mapie
+  ptrZ->z_common.x = dstX;
+  ptrZ->z_common.y = dstY;
+  //===== MAPA: wyzeruj punkty sprzed zmiany
+  for (a=0; a<ptrZ->z_size; a++)
+    {
+    ptrMapa = PtrPunktMapy(ptrZ->z_x[a], ptrZ->z_y[a]);
+    ptrMapa->pm_zwierz.pm1_tab = 0;
+    ptrMapa->pm_zwierz.pm1_poz = 0;
+    }
+  //===== LISTA SEGMENTÓW: przesuñ na liœcie
+  for (a=ptrZ->z_size; a>=0; a--) // od ostatniego w dó³
+    {
+    if (a==0) // pierwszy na liœcie - wstaw wspó³rzêdne docelowe g³owy
+      {
+      ptrZ->z_x[a] = dstX;
+      ptrZ->z_y[a] = dstY;
+      }
+    else // pozosta³e - wstaw wspó³rzêdna tego co by³ wy¿ej
+      {
+      ptrZ->z_x[a] = ptrZ->z_x[a-1];
+      ptrZ->z_y[a] = ptrZ->z_y[a-1];
+      }
+    } // for
+
+  if (plus) // zwiêkszania rozmiaru - NIE kasuj ostatniego segmentu
+    ptrZ->z_size++; // zwiêksz rozmiar
+  else
+    {
+    // wyzeruj ostatni
+    ptrZ->z_x[ptrZ->z_size] = 0;
+    ptrZ->z_y[ptrZ->z_size] = 0;
+    }
+  //===== przepisz dane do mapy
+  for (a=0; a<ptrZ->z_size; a++)
+    {
+    ptrMapa = PtrPunktMapy(ptrZ->z_x[a], ptrZ->z_y[a]);
+    ptrMapa->pm_zwierz.pm1_tab = TAB_ZWIERZ;
+    ptrMapa->pm_zwierz.pm1_poz = poz;
+    }
+} // PrzesunZwierz
+
+//---------------------------------------------------------------------------
+//! Oznakuj martwego zwierza na liœcie, z mapy usuñ ca³kiem
+void UsunMartwego(short poz)
+{
+  short a;
+  OBIEKTINFO_ZWIERZ* ptrZ; // zwierz przetwarzany
+  PUNKT_MAPY* ptrDst=NULL;
+
+  ptrZ = listaZwierz+poz;
+  // 1.usuñ dane z mapy
+  for (a=0; a<ptrZ->z_size; a++)
+    {
+    ptrDst = PtrPunktMapy(ptrZ->z_x[a], ptrZ->z_y[a]);
+    ptrDst->pm_zwierz.pm1_tab = 0;
+    ptrDst->pm_zwierz.pm1_poz = 0;
+    }
+
+  // 2.oznakuj w tabeli jako martwy
+  listaZwierz[poz].z_def = -1;
+} // UsunMartwego
+
+//---------------------------------------------------------------------------
 // Przetwórz zwierzê z listy
 void ProcessZwierz(short poz)
 {
@@ -414,8 +502,6 @@ void ProcessZwierz(short poz)
   short mapDestX, mapDestY;
   short zjedz=0;
   short poz2;
-  PUNKT_MAPY* ptrSrc=NULL;
-  PUNKT_MAPY* ptrDst=NULL;
 
   OBIEKTINFO_ZWIERZ* ptrZ1; // zwierz przetwarzany
   DEF_ZWIERZ* defZ1;        // definicja
@@ -434,10 +520,8 @@ void ProcessZwierz(short poz)
 
   //=== Ustal miejsce do którego ma siê przemieœciæ (oraz czy coœ zje)
   zjedz  = WybierzFood(mapSrcX, mapSrcY, &mapDestX, &mapDestY, defZ1); // zwraca 1 lub 2
-  ptrSrc = PtrPunktMapy(mapSrcX, mapSrcY);
-  ptrDst = PtrPunktMapy(mapDestX, mapDestY);
 
-  //=== najpierw zjedz, potem siê przemieœæ
+  //=== najpierw zjedz obiekt w punkcie docelowym, potem tam siê przemieœæ
   if (zjedz)
     {
     if (zjedz==2) // zjedz roœlino¿ercê
@@ -472,35 +556,25 @@ void ProcessZwierz(short poz)
   if (mapDestX != mapSrcX
     ||mapDestY != mapSrcY) // tylko gdy zmienia miejsce
     {
-    // przepisz dane ze starego miejsca do nowego
-    ptrDst->pm_zwierz.pm1_tab = ptrSrc->pm_zwierz.pm1_tab;
-    ptrDst->pm_zwierz.pm1_poz = ptrSrc->pm_zwierz.pm1_poz;
-
-    // wyma¿ w starym miejscu na mapie
-    ptrSrc->pm_zwierz.pm1_tab = 0;
-    ptrSrc->pm_zwierz.pm1_poz = 0;
-
-    // w tabeli zwierz zmieñ wspó³rzêdna na mapie
-    ptrZ1->z_common.x = mapDestX;
-    ptrZ1->z_common.y = mapDestY;
+    if (listaZwierz[poz].z_zapas > 8
+      &&listaZwierz[poz].z_size < MAX_SIZE)
+      {
+      listaZwierz[poz].z_zapas -= 5;
+      PrzesunZwierz(poz, mapSrcX, mapSrcY, mapDestX, mapDestY, 1); // 1=uroœnij
+      }
+    else // tylko przesuñ
+      PrzesunZwierz(poz, mapSrcX, mapSrcY, mapDestX, mapDestY, 0);
     }
 
   //=== zmniejsz zapas
   if (listaZwierz[poz].z_zapas > 0)
     listaZwierz[poz].z_zapas--;
 
-  //=== Niestety, jest martwy - usuñ go z mapy
   if (listaZwierz[poz].z_zapas <= 0)
-    {
-    // 1.usuñ dane z mapy
-    ptrDst->pm_zwierz.pm1_tab = 0;
-    ptrDst->pm_zwierz.pm1_poz = 0;
+    UsunMartwego(poz);
 
-    // 2.oznakuj w tabeli jako martwy
-    listaZwierz[poz].z_def = -1;
-    }
   // rozmna¿anie
-  if (ptrZ1->z_zapas >= defZ1->dz_maxZapas) // s¹ nadwy¿ki do wydania
+/*  if (ptrZ1->z_zapas >= defZ1->dz_maxZapas) // s¹ nadwy¿ki do wydania
     {
     short ok;
     short mapNewX, mapNewY;
@@ -511,7 +585,7 @@ void ProcessZwierz(short poz)
       ptrZ1->z_zapas -= 5; // zmniejsz poziom zapasu matce
       DodajZwierz(mapNewX, mapNewY, ptrZ1->z_def);
       }
-    }
+    }*/
 } // ProcessZwierz
 
 //---------------------------------------------------------------------------
@@ -633,9 +707,17 @@ void DrukujZnakMapy(short x, short y)
   if (CzyMapaZwierz(x,y)) // jest zwierz w tabeli
     {
     poz = GetPozZwierz(x,y);
-    znak[0] = 'A' + listaZwierz[poz].z_zapas -1;
+
+    if (listaZwierz[poz].z_common.x == x
+      &&listaZwierz[poz].z_common.y == y)
+      {
+      // g³owa ma literkê
+      znak[0] = 'A' + listaZwierz[poz].z_zapas -1;
+      }
+    else
+      znak[0] = '%'; // reszta cia³a - znaczki
     if (listaZwierz[poz].z_def == 0)
-      SetTextColor(FOREGROUND_BLUE);
+      SetTextColor(FOREGROUND_RED);
     else // 2
       SetTextColor(FOREGROUND_RED);
     }
