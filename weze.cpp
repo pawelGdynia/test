@@ -81,8 +81,8 @@ typedef struct // info wspólne dla wszystkich wyst¹pieñ
 
 static DEF_ZWIERZ defZwierz[] = {
 // Rosl Drap Zapas Kalorie  maxSize Utrata Zasieg
-  {1,   0,     10,      20,      10,     5,    1},
-  {0,   1,     20,      10,      10,     5,    1},
+  {1,   0,     10,      20,      10,     5,    2},
+  {0,   1,     20,      10,      10,     5,    2},
   };
 #define ILE_DEFZWIERZ (sizeof(defZwierz)/sizeof(defZwierz[0]))
 
@@ -265,6 +265,7 @@ void ZapelnijMape(void)
       }
 // DodajZwierz(1, 1, 0);
  DodajZwierz(3, 1, 1);
+ DodajZwierz(4, 1, 1);
 } // ZapelnijMape
 
 short losowe[24][4] = { // wszystkie mo¿liwe kolejnoœci dla 4 elementów
@@ -427,8 +428,9 @@ short WybierzFood(short x1, short y1, short* destX, short* destY, DEF_ZWIERZ* de
   // w losowej kolejnoœci - sprawdŸ punkty s¹siednie
   for (a=0; a<ile; a++)
     {
-    tmpX = x1 + waz_x[ ktore[a] ];
-    tmpY = y1 + waz_y[ ktore[a] ];
+    short ruch = ktore[a];
+    tmpX = x1 + waz_x[ ruch ];
+    tmpY = y1 + waz_y[ ruch ];
     if (CzyPunktZakres(tmpX, tmpY)==0) // punkt wyszed³ poza mapê, pomiñ go
       continue;
     if (a < 5 && CzyMapaZwierz(tmpX, tmpY)==0) // gdy miejsce wolne
@@ -450,8 +452,31 @@ short WybierzFood(short x1, short y1, short* destX, short* destY, DEF_ZWIERZ* de
           {
           if (bestX == -1) // nie by³o wczeœniej takiej sytuacji
             {
-            bestX = tmpX;
-            bestY = tmpY;
+            short x,y;
+
+            // zamieñ na punkt s¹siaduj¹ce z punktem wyjœciowym
+            x = x1 + waz_x [ waz_posr1[ruch]  ];
+            y = y1 + waz_y [ waz_posr1[ruch]  ];
+            if (CzyPunktZakres(x, y)
+              &&CzyMapaZwierz(x, y) == 0) // jest wolne, mo¿na u¿yæ
+              {
+              bestX = x;
+              bestY = y;
+              }
+            else // spróbuj drogi alternatywnej
+              {
+              if (waz_posr2[a] != 0) // jest zdefiniowana droga alternatywna
+                {
+                x = x1 + waz_x [ waz_posr2[ruch] ];
+                y = y1 + waz_y [ waz_posr2[ruch] ];
+                if (CzyPunktZakres(x, y)
+                  &&CzyMapaZwierz(x, y) == 0) // jest wolne, mo¿na u¿yæ
+                  {
+                  bestX = x;
+                  bestY = y;
+                  }
+                }
+              }
             }
           }
         }
@@ -472,8 +497,31 @@ short WybierzFood(short x1, short y1, short* destX, short* destY, DEF_ZWIERZ* de
             {
             if (bestX == -1) // nie by³o wczeœniej takiej sytuacji
               {
-              bestX = tmpX;
-              bestY = tmpY;
+              short x,y;
+
+              // zamieñ na punkt s¹siaduj¹ce z punktem wyjœciowym
+              x = x1 + waz_x [ waz_posr1[ruch]  ];
+              y = y1 + waz_y [ waz_posr1[ruch]  ];
+              if (CzyPunktZakres(x, y)
+                &&CzyMapaZwierz(x, y) == 0) // jest wolne, mo¿na u¿yæ
+                {
+                bestX = x;
+                bestY = y;
+                }
+              else // spróbuj drogi alternatywnej
+                {
+                if (waz_posr2[a] != 0) // jest zdefiniowana droga alternatywna
+                  {
+                  x = x1 + waz_x [ waz_posr2[ruch] ];
+                  y = y1 + waz_y [ waz_posr2[ruch] ];
+                  if (CzyPunktZakres(x, y)
+                    &&CzyMapaZwierz(x, y) == 0) // jest wolne, mo¿na u¿yæ
+                    {
+                    bestX = x;
+                    bestY = y;
+                    }
+                  }
+                }
               }
             }
           }
@@ -491,6 +539,11 @@ short WybierzFood(short x1, short y1, short* destX, short* destY, DEF_ZWIERZ* de
     *destX = wolneX;
     *destY = wolneY;
     }
+  if (x1 == *destX
+    ||y1 == *destY)
+    ; // ok, to punkt s¹siedni
+  else
+    printf("To nie jest s¹siedni punkt!");
   return 0; // nie ma nic jadalnego w okolicy
 } // WybierzFood
 
@@ -652,9 +705,9 @@ void TestMapy(void)
       ptrMapa = PtrPunktMapy(x, y);
       if (x != ptrZ1->z_x[0]
         ||y != ptrZ1->z_y[0])
-        printf("Niezgodne wspolrzedne w zwierzu");
+        printf("Niezgodne wspolrzedne w zwierzu. poz=%u gen=%u\n", a, ileGen);
       if (ptrMapa->pm_zwierz.pm1_poz != a)
-        printf("Niezgodne wspolrzedne lub typ na mapie (%u)", a);
+        printf("Niezgodne wspolrzedne lub typ na mapie.poz=%u gen=%u\n", a, ileGen);
       }
     }
 } // TestMapy
@@ -1043,7 +1096,8 @@ void DrukujMape(short idZwierz)
     }
   printf("\n");
   SetTextColor(FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
-  printf("Wcisnij SPACJE, 1,2,3,4,5 q(koniec)");
+  printf("Wcisnij SPACJE, 1,2,3,4,5 q(koniec)\n");
+  printf("d(debug 1) w(wszystkie)\n");
   printf("\n");
   if (idZwierz != -1)
     Waz2Plik(poz);
