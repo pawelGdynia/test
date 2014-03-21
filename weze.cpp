@@ -49,6 +49,14 @@ static OBIEKTINFO_ZWIERZ  listaZwierz[X_SIZE*Y_SIZE+1];
 static short ileGrunt =0;
 static short ileRoslin=0;
 static short ileZwierz=0;
+
+//---------------------------------------------------------------------------
+//! Zwraca adres punktu na mapie, niezale¿nie od wewnêtrznej organizacji
+PUNKT_MAPY* PtrPunktMapy(short x, short y)
+{
+  return &(mapa[x][y]);
+} // PtrPunktMapy
+
 //---------------------------------------------------------------------------
 //! Przygotuj 3 tabele na opisy obiektów
 void PusteTabele(void)
@@ -68,9 +76,12 @@ void PusteTabele(void)
 //! Dopisz na mapie dane gruntu
 void DodajGrunt(short x, short y, short id)
 {
+  PUNKT_MAPY* ptr;
+  ptr = PtrPunktMapy(x,y);
+
   // info w samej mapie
-  mapa[x][y].pm_grunt.pm1_tab = TAB_GRUNT;
-  mapa[x][y].pm_grunt.pm1_poz = ileGrunt;
+  ptr->pm_grunt.pm1_tab = TAB_GRUNT;
+  ptr->pm_grunt.pm1_poz = ileGrunt;
 
   // info w obiekcie (najbli¿sze wolne miejsce)
   listaGrunt[ileGrunt].oig_common.oic_x = x; // ogólne
@@ -86,9 +97,12 @@ void DodajGrunt(short x, short y, short id)
 //! Dopisz na mapie dane roœliny
 void DodajRosline(short x, short y, short id)
 {
+  PUNKT_MAPY* ptr;
+  ptr = PtrPunktMapy(x,y);
+
   // info w samej mapie
-  mapa[x][y].pm_roslina.pm1_tab = TAB_ROSLINA;
-  mapa[x][y].pm_roslina.pm1_poz = ileRoslin;
+  ptr->pm_roslina.pm1_tab = TAB_ROSLINA;
+  ptr->pm_roslina.pm1_poz = ileRoslin;
 
   // info w obiekcie
   listaRoslin[ileRoslin].oir_common.oic_x = x;
@@ -106,9 +120,12 @@ void DodajRosline(short x, short y, short id)
 //! Dopisz na mapie dane zwierza
 void DodajZwierz(short x, short y, short id)
 {
+  PUNKT_MAPY* ptr;
+  ptr = PtrPunktMapy(x,y);
+
   // info w samej mapie
-  mapa[x][y].pm_zwierz.pm1_tab = TAB_ZWIERZ;
-  mapa[x][y].pm_zwierz.pm1_poz = ileZwierz;
+  ptr->pm_zwierz.pm1_tab = TAB_ZWIERZ;
+  ptr->pm_zwierz.pm1_poz = ileZwierz;
 
   // info w obiekcie
   listaZwierz[ileZwierz].oiz_common.oic_x = x;
@@ -134,7 +151,7 @@ void ZapelnijMape(void)
       DodajGrunt(x, y, 0);
 
       // roœliny
-      if (x%2 && y%2) // tylko kilka rz¹dków roœliny zwyk³ej (typ 0)
+      //if (x%2 && y%2) // tylko kilka rz¹dków roœliny zwyk³ej (typ 0)
         DodajRosline(x, y, 0);
       }
   DodajZwierz(1, 1, 0);
@@ -176,7 +193,10 @@ short CzyPunktZakres(short x, short y)
 //! Sprawdza czy dla podanych wspó³rzêdnych wystêpuje obiekt - roœlina
 short CzyMapaRoslina(short x, short y)
 {
-  if (mapa[x][y].pm_roslina.pm1_tab == 0)
+  PUNKT_MAPY* ptr;
+  ptr = PtrPunktMapy(x,y);
+
+  if (ptr->pm_roslina.pm1_tab == 0)
     return 0; // nie ma tam roœliny
 
   return 1; // jest
@@ -186,14 +206,20 @@ short CzyMapaRoslina(short x, short y)
 //! Któr¹ pozycjê w tabeli zajmuje roœlina?
 short GetPozRoslina(short x, short y)
 {
-  return mapa[x][y].pm_roslina.pm1_poz;
+  PUNKT_MAPY* ptr;
+  ptr = PtrPunktMapy(x,y);
+
+  return ptr->pm_roslina.pm1_poz;
 } // GetPozRoslina
 
 //---------------------------------------------------------------------------
 //! Sprawdza czy dla podanych wspó³rzêdnych wystêpuje obiekt - roœlina
 short CzyMapaZwierz(short x, short y)
 {
-  if (mapa[x][y].pm_zwierz.pm1_tab == 0)
+  PUNKT_MAPY* ptr;
+  ptr = PtrPunktMapy(x,y);
+
+  if (ptr->pm_zwierz.pm1_tab == 0)
     return 0; // nie ma tam nikogo
 
   return 1; // jest
@@ -203,7 +229,10 @@ short CzyMapaZwierz(short x, short y)
 //! Któr¹ pozycjê w tabeli zajmuje zwierz?
 short GetPozZwierz(short x, short y)
 {
-  return mapa[x][y].pm_zwierz.pm1_poz;
+  PUNKT_MAPY* ptr;
+  ptr = PtrPunktMapy(x,y);
+
+  return ptr->pm_zwierz.pm1_poz;
 } // GetPozZwierz
 
 //---------------------------------------------------------------------------
@@ -339,25 +368,19 @@ void PrzetworzMape(void)
   short destX, destY;
   short zjedz=0;
   short poz2;
+  PUNKT_MAPY* ptrSrc=NULL;
+  PUNKT_MAPY* ptrDst=NULL;
   ileGen++;
 
-  // roœliny
-/*  for (y=0; y<Y_SIZE; y++)
-    for (x=0; x<X_SIZE; x++)
-      {
-      if (CzyMapaRoslina(x,y)) // tu jest roœlina
-        {
-        poz = GetPozRoslina(x,y);
-        if (listaRoslin[poz].oir_poziom < 9)
-          listaRoslin[poz].oir_poziom++; // wzrost +1
-        }
-      }*/
+  // przegl¹danie kolejnych obiektów jest szybsze ni¿ przegl¹danie wg mapy
+  // nie tracimy czasu na puste komórki
 
   for (poz=0; poz<ileRoslin; poz++)
     {
     if (listaRoslin[poz].oir_poziom < 9)
       listaRoslin[poz].oir_poziom++; // wzrost +1
     }
+
   // zwierzêta
   for (poz=0; poz<ileZwierz; poz++)
     if (listaZwierz[poz].oiz_defpoz >= 0) // pomijaj martwe (czyli ujemne)
@@ -371,12 +394,14 @@ void PrzetworzMape(void)
         ||destY != mapY) // tylko gdy zmienia miejsce
         {
         // przepisz dane ze starego miejsca do nowego
-        mapa[destX][destY].pm_zwierz.pm1_tab = mapa[mapX][mapY].pm_zwierz.pm1_tab;
-        mapa[destX][destY].pm_zwierz.pm1_poz = mapa[mapX][mapY].pm_zwierz.pm1_poz;
+        ptrSrc = PtrPunktMapy(mapX, mapY);
+        ptrDst = PtrPunktMapy(destX, destY);
+        ptrDst->pm_zwierz.pm1_tab = ptrSrc->pm_zwierz.pm1_tab;
+        ptrDst->pm_zwierz.pm1_poz = ptrSrc->pm_zwierz.pm1_poz;
 
         // wyma¿ w starym miejscu na mapie
-        mapa[mapX][mapY].pm_zwierz.pm1_tab = 0;
-        mapa[mapX][mapY].pm_zwierz.pm1_poz = 0;
+        ptrSrc->pm_zwierz.pm1_tab = 0;
+        ptrSrc->pm_zwierz.pm1_poz = 0;
 
         // w tabeli zwierz zmieñ wspó³rzêdna na mapie
         listaZwierz[poz].oiz_common.oic_x = destX;
@@ -405,8 +430,8 @@ void PrzetworzMape(void)
       if (listaZwierz[poz].oiz_zapas <= 0)
         {
         // 1.usuñ dane z mapy
-        mapa[destX][destY].pm_zwierz.pm1_tab = 0;
-        mapa[destX][destY].pm_zwierz.pm1_poz = 0;
+        ptrDst->pm_zwierz.pm1_tab = 0;
+        ptrDst->pm_zwierz.pm1_poz = 0;
 
         // 2.oznakuj w tabeli jako martwy
         listaZwierz[poz].oiz_defpoz = -1;
@@ -440,7 +465,8 @@ void PrzetworzMape(void)
           {
           x = listaZwierz[poz+a].oiz_common.oic_x;
           y = listaZwierz[poz+a].oiz_common.oic_y;
-          mapa[x][y].pm_zwierz.pm1_poz--; // przenumeruj o 1 w dó³
+          ptrSrc = PtrPunktMapy(x, y);
+          ptrSrc->pm_zwierz.pm1_poz--; // przenumeruj o 1 w dó³
           }
         }
       ileZwierz--;
@@ -459,6 +485,10 @@ void PrzetworzMape(void)
 //@{ @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
 static HANDLE hStdOut;
+
+// wyœwietlanie zajmuje du¿o wiêcej czasu ni¿ generowananie, wiêc mo¿na
+// pokazywaæ co któr¹œ klatkê - wg zmiennej czestoPokaz
+static short czestoPokaz=1; //!< Co któr¹ klatkê pokazywaæ?
 //---------------------------------------------------------------------------
 //! Ustaw kolor tekstu - kolor zdefiniowany w windows.h
 void SetTextColor(short kolor)
@@ -478,12 +508,14 @@ void PutZnak(char* znak)
 //! Zamieñ punkt mapy na literkê do wydruku
 void DrukujZnakMapy(short x, short y)
 {
-  char znak[2]= "_";
+  char  znak[2]= "_";
   short poz;
+  PUNKT_MAPY* ptr;
+  ptr = PtrPunktMapy(x,y);
 
   // grunt
-  poz = mapa[x][y].pm_grunt.pm1_poz;
-  if (mapa[x][y].pm_grunt.pm1_tab != 0)
+  poz = ptr->pm_grunt.pm1_poz;
+  if (ptr->pm_grunt.pm1_tab != 0)
     {
     SetTextColor(FOREGROUND_BLUE);
     strcpy(znak, ".");
@@ -550,10 +582,11 @@ int main(int /*argc*/, char* /*argv[]*/)
   ZapelnijMape();
   _next:
   PrzetworzMape();
-  if ((ileGen%10000)==0)
+  if ((ileGen % czestoPokaz)==0)
+    {
     DrukujMape();
-//  if (ileGen > 7000)
-//    znak = getch(); // praca krokowa
+    znak = getch(); // praca krokowa    
+    }
   SetTextColor(FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
   if (znak == 'q')
     return 0;
