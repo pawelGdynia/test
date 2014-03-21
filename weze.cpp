@@ -132,7 +132,7 @@ void ZapelnijMape(void)
       DodajGrunt(x, y, 1);
 
       // roœliny
-      if (y<4) // tylko kilka rz¹dków
+      if (y<7) // tylko kilka rz¹dków
         DodajRosline(x, y, 1);
       }
   DodajZwierz(3, 3, 1);
@@ -140,7 +140,7 @@ void ZapelnijMape(void)
   DodajZwierz(1, 1, 1);
 } // ZapelnijMape
 
-short losowe[24][4] = { // rosn¹co
+short losowe[24][4] = { // wszystkie mo¿liwe kolejnoœci dla 4 elementów
   {1,2,3,4}, {1,2,4,3}, {1,3,2,4}, {1,3,4,2}, {1,4,2,3}, {1,4,3,2},
   {2,1,3,4}, {2,1,4,3}, {2,3,1,4}, {2,3,4,1}, {2,4,1,3}, {2,4,3,1},
   {3,1,2,4}, {3,1,4,2}, {3,2,1,4}, {3,2,4,1}, {3,4,1,2}, {3,4,2,1},
@@ -362,14 +362,20 @@ void DrukujZnakMapy(short x, short y)
   if (poz > 0)
     {
     znak[0] = '0' + listaRoslin[poz].oir_poziom;
-    SetTextColor(FOREGROUND_GREEN);
+    if (RoslinaJadalna(listaRoslin[poz].oir_poziom))
+      SetTextColor(FOREGROUND_GREEN | FOREGROUND_INTENSITY);
+    else
+      SetTextColor(FOREGROUND_GREEN);
     }
   // zwierzeta
   poz = mapa[x][y].pm_zwierz.pm1_poz;
   if (poz > 0)
     {
     znak[0] = 'A' + listaZwierz[poz].oiz_zapas -1;
-    SetTextColor(FOREGROUND_RED);
+    if (listaZwierz[poz].oiz_zapas < 10)
+      SetTextColor(FOREGROUND_BLUE);
+    else
+      SetTextColor(FOREGROUND_RED);
     }
   PutZnak(znak);
 } // DrukujZnakMapy
@@ -408,7 +414,7 @@ int main(int argc, char* argv[])
   _next:
   PrzetworzMape();
   DrukujMape();
-//  znak = getch(); // praca krokowa
+  znak = getch(); // praca krokowa
   SetTextColor(FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
   if (znak == 'q')
     return 0;
