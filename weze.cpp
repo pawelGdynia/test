@@ -712,8 +712,15 @@ char ZnakSegmentu(short* tab)
     return 188;
   if (tab[D0] && tab[P0])
     return 201;
-  //if (tb[D0] && tab[L0])
+  if (tab[D0] && tab[L0])
     return 187;
+
+  // dla ogona:
+  if (tab[G0] || tab[D0])
+    return 186;
+  if (tab[L0] || tab[P0])
+    return 205;
+  return '*';  
 } // ZnakSegmentu
 
 //---------------------------------------------------------------------------
@@ -740,18 +747,21 @@ char ZnakWeza(short x, short y)
         znak = '8';
         return znak;
         }
-      if (a == ptrZ->z_size-1)
+/*      if (a == ptrZ->z_size-1)
         {
         // koniec ogona to kropka
         znak = '.';
         return znak;
-        }
+        }*/
       // zwyk³e znaki segmentowe
       memset(bs, 0, sizeof(bs));
       t = TypSasiada(ptrZ->z_x[a], ptrZ->z_y[a], ptrZ->z_x[a-1], ptrZ->z_y[a-1]);
       bs[t] = 1;
-      t = TypSasiada(ptrZ->z_x[a], ptrZ->z_y[a], ptrZ->z_x[a+1], ptrZ->z_y[a+1]);
-      bs[t] = 1;
+      if (a < ptrZ->z_size-1) // nie sprawdzaj dla ostatniego
+        {
+        t = TypSasiada(ptrZ->z_x[a], ptrZ->z_y[a], ptrZ->z_x[a+1], ptrZ->z_y[a+1]);
+        bs[t] = 1;
+        }
       znak = ZnakSegmentu(bs);
       }
   return znak;
