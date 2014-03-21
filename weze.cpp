@@ -361,6 +361,9 @@ void ZapelnijMapeFull(void)
       }
 } // ZapelnijMapeFull
 
+/*
+// Mapa predefiniowana z ro¿nymi rodzajami gruntu
+
 char mapa1[20][51] = {
 {"000000000000000000000000000000000000000111111111110"},
 {"011111122222222222222222100000001111111111111111100"},
@@ -409,7 +412,7 @@ void ZapelnijMapeTab(void)
   short x, y;
   char znak;
   PUNKT_MAPY* ptrMapa;
-    
+
   for (x=0; x<xSize; x++)
     for (y=0; y<ySize; y++)
       {
@@ -422,13 +425,13 @@ void ZapelnijMapeTab(void)
       }
   DodajZwierz(3, 1, 1);
 } // ZapelnijMapeTab
-
+*/
 //---------------------------------------------------------------------------
 //! Wype³nij mapê - z jednego z kilku Ÿróde³
 void ZapelnijMape(void)
 {
-  //ZapelnijMapeFull();
-  ZapelnijMapeTab();
+  ZapelnijMapeFull();
+  //ZapelnijMapeTab();
 } // ZapelnijMape
 
 short losowe[24][4] = { // wszystkie mo¿liwe kolejnoœci dla 4 elementów
@@ -1479,10 +1482,13 @@ int main(int argc, char* argv[])
 
   DrukujMape();
   znak = getch(); // praca krokowa
-  _next:
-   PrzetworzMape();
 
-  _pokaz: // tylko wyœwietl inaczej, bez przetwarzania
+  while (1)
+  {
+  PrzetworzMape();
+
+  tylko_pokaz: // tylko wyœwietl inaczej, bez przetwarzania
+  
   if ((ileGen % czestoPokaz)==0)
     {
     DrukujMape();
@@ -1511,43 +1517,38 @@ int main(int argc, char* argv[])
     else
       debug = 0;
     }
-  if (znak == 'n') // next
+  if (znak == 'n'  // nastêpny
+    ||znak == 'p') // poprzedni
     {
     if (selZwierz == -1)
       selZwierz = listaZwierz[0].z_id; // nie by³o ¿adnego - to id pierwszego
-    else
+    else // by³ ju¿ wybrany
       {
       short poz;
       poz = Id2PozZwierz(selZwierz);
-      poz++;
-      if (poz >= ileZwierz)
-        poz = 0;
+      if (znak == 'n') // nastêpny
+        {
+        poz++;
+        if (poz >= ileZwierz)
+          poz = 0;
+        }
+      else // poprzedni
+        {
+        poz--;
+        if (poz < 0)
+          poz = ileZwierz;
+        }
       selZwierz = listaZwierz[poz].z_id;
       }
-    goto _pokaz;
-    }
-  if (znak == 'p') // previous
-    {
-    if (selZwierz == -1)
-      selZwierz = listaZwierz[0].z_id; // nie by³o ¿adnego - to id pierwszego
-    else
-      {
-      short poz;
-      poz = Id2PozZwierz(selZwierz);
-      poz--;
-      if (poz < 0)
-        poz = ileZwierz;
-      selZwierz = listaZwierz[poz].z_id;
-      }
-    goto _pokaz;
+    goto tylko_pokaz;
     }
 
   if (znak == 'q')
     {
     AlokujPamiec(2);
-    return 0;
+    return 0; // wyjdŸ z programu
     }
-  goto _next;
+  }
 
 // return 0;
 } // main
