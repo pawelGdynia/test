@@ -1232,24 +1232,26 @@ short TypSasiada(short x, short y, short x2, short y2)
 //! Zamieñ sasiedztwo na znak segmentu
 char ZnakSegmentu(short* tab)
 {
+//  char t[] = {186, 205, 200, 188, 201, 187, 186, 205};
+  char t[] = "|-L//\\|-";
   if (tab[G0] && tab[D0])
-    return 186;
+    return t[0];
   if (tab[L0] && tab[P0])
-    return 205;
+    return t[1];
   if (tab[G0] && tab[P0])
-    return 200;
+    return t[2];
   if (tab[G0] && tab[L0])
-    return 188;
+    return t[3];
   if (tab[D0] && tab[P0])
-    return 201;
+    return t[4];
   if (tab[D0] && tab[L0])
-    return 187;
+    return t[5];
 
   // dla ogona:
   if (tab[G0] || tab[D0])
-    return 186;
+    return t[6];
   if (tab[L0] || tab[P0])
-    return 205;
+    return t[7];
   return '*';
 } // ZnakSegmentu
 
