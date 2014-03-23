@@ -177,7 +177,10 @@ void SetTekstKolor(short kolor)
 void PutZnak(char* znak)
 {
   unsigned long count;
-
+  char txt[2];
+  txt[0] = znak[0];
+  txt[1] = '\0';
+  puts(txt);
 //  WriteConsole(hStdOut, znak, 1, &count, NULL);
 } // PutZnak
 
