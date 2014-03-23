@@ -157,19 +157,21 @@ void PrzygotujEkran(void)
 #else //=====================================================================
 
 // http://cc.byexamples.com/2007/01/20/print-color-string-without-ncurses/
-#define KOLOR_DARKBLUE   44
-#define KOLOR_DARKRED    31
-#define KOLOR_RED        31
-#define KOLOR_DARKGREEN  32
-#define KOLOR_GREEN      32
-#define KOLOR_DARKGREY   37 // white
-#define KOLOR_DARKYELLOW 33
+// http://linux.byexamples.com/archives/184/print-text-in-colors-with-a-simple-command-line/
+
+#define KOLOR_DARKBLUE   (char*)"\33[01;34m"
+#define KOLOR_DARKRED    (char*)"\33[22;31m"
+#define KOLOR_RED        (char*)"\33[01;21m"
+#define KOLOR_DARKGREEN  (char*)"\33[22;32m"
+#define KOLOR_GREEN      (char*)"\33[01;32m"
+#define KOLOR_DARKGREY   (char*)"\33[01;30m"
+#define KOLOR_DARKYELLOW (char*)"\33[01;33m"
 
 //---------------------------------------------------------------------------
 //! Ustaw kolor tekstu - kolor zdefiniowany w windows.h
-void SetTekstKolor(short kolor)
+void SetTekstKolor(char* kolor)
 {
-//  SetConsoleTextAttribute(hStdOut, kolor);
+  printf(kolor);
 } // SetTekstKolor
 
 //---------------------------------------------------------------------------
@@ -182,17 +184,13 @@ void PutZnak(char* znak)
 //---------------------------------------------------------------------------
 void SetKursorPoz(short x, short y)
 {
-//  COORD coord = {0,0};
-//  coord.X = x;
-//  coord.Y = y;
-//  SetConsoleCursorPosition(hStdOut, coord);
+  printf("\033[2J\033[1;1H"); // wyczyœæ + górny lewy róg
 } // SetKursorPoz
 
 //---------------------------------------------------------------------------
 void PrzygotujEkran(void)
 {
-  system("clear");
-//  hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
+  printf("\033[2J\033[1;1H"); // wyczyœæ + górny lewy róg
   SetTekstKolor(KOLOR_DARKGREY);
 } // PrzygotujEkran
 
@@ -1302,7 +1300,7 @@ char ZnakWeza(short x, short y)
 
 //---------------------------------------------------------------------------
 //! Ustal znak i kolor dla gruntu
-char ZnakGruntu(PUNKT_MAPY* ptrMapa, short* kolor)
+char ZnakGruntu(PUNKT_MAPY* ptrMapa)
 {
   OBIEKTINFO_GRUNT* ptrG;
 
@@ -1310,18 +1308,17 @@ char ZnakGruntu(PUNKT_MAPY* ptrMapa, short* kolor)
   switch (ptrG->g_def)
     {
     case G_ROLNA:
-      *kolor = KOLOR_DARKGREEN;
+      SetTekstKolor(KOLOR_DARKGREEN);
       return '.';
 
     case G_OCEAN:
-      *kolor = KOLOR_DARKGREEN;
+      SetTekstKolor(KOLOR_DARKGREEN);
       return ' ';
 
     case G_PUSTKA:
-      *kolor = KOLOR_DARKYELLOW;
+      SetTekstKolor(KOLOR_DARKYELLOW);
       return '*';
     }
-  *kolor = KOLOR_DARKRED;
   return '?';
 } // ZnakGruntu
 
@@ -1330,14 +1327,13 @@ char ZnakGruntu(PUNKT_MAPY* ptrMapa, short* kolor)
 void DrukujZnakMapy(short x, short y)
 {
   char  znak[2]= "_";
-  short poz, kolor;
+  short poz;
   PUNKT_MAPY* ptrMapa;
   ptrMapa = PtrPunktMapy(x,y);
 
   // grunt
   //poz = ptrMapa->pm_grunt.pm1_poz;
-  znak[0] = ZnakGruntu(ptrMapa, &kolor);
-  SetTekstKolor(kolor);
+  znak[0] = ZnakGruntu(ptrMapa);
 
   // roœliny
   if (CzyMapaRoslina(x,y)) // jest trawa w tabeli
