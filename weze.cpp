@@ -5,9 +5,7 @@
 #pragma hdrstop
 #include <stdio.h>
 #include <string.h>
-#include <conio.h>
 #include <stdlib.h>
-#include <windows.h>
 
 // w których tabelach jest przechowywany opis obiektu
 #define TAB_GRUNT   1
@@ -102,7 +100,7 @@ typedef struct
   short z_id; // unikalny numer
   } OBIEKTINFO_ZWIERZ;
 
-
+#define WIN 1
 
 
 //   @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -110,6 +108,8 @@ typedef struct
 //!  Procedury wyœwietlania na ekranie
 //@{ @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
+#if (WIN > 0)
+#include <windows.h>
 // kolory wed³ug: http://stackoverflow.com/questions/17125440/c-win32-console-color
 
 #define KOLOR_DARKBLUE   (FOREGROUND_BLUE)
@@ -149,10 +149,56 @@ void SetKursorPoz(short x, short y)
 //---------------------------------------------------------------------------
 void PrzygotujEkran(void)
 {
-  clrscr();
+  system("cls");
   hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
   SetTekstKolor(KOLOR_DARKGREY);
 } // PrzygotujEkran
+
+#else //=====================================================================
+
+// http://cc.byexamples.com/2007/01/20/print-color-string-without-ncurses/
+#define KOLOR_DARKBLUE   44
+#define KOLOR_DARKRED    31
+#define KOLOR_RED        31
+#define KOLOR_DARKGREEN  32
+#define KOLOR_GREEN      32
+#define KOLOR_DARKGREY   37 // white
+#define KOLOR_DARKYELLOW 33
+
+//---------------------------------------------------------------------------
+//! Ustaw kolor tekstu - kolor zdefiniowany w windows.h
+void SetTekstKolor(short kolor)
+{
+//  SetConsoleTextAttribute(hStdOut, kolor);
+} // SetTekstKolor
+
+//---------------------------------------------------------------------------
+//! Drukuj tekst wg bie¿¹cego atrybutu
+void PutZnak(char* znak)
+{
+  unsigned long count;
+
+//  WriteConsole(hStdOut, znak, 1, &count, NULL);
+} // PutZnak
+
+//---------------------------------------------------------------------------
+void SetKursorPoz(short x, short y)
+{
+//  COORD coord = {0,0};
+//  coord.X = x;
+//  coord.Y = y;
+//  SetConsoleCursorPosition(hStdOut, coord);
+} // SetKursorPoz
+
+//---------------------------------------------------------------------------
+void PrzygotujEkran(void)
+{
+  system("clear");
+//  hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
+  SetTekstKolor(KOLOR_DARKGREY);
+} // PrzygotujEkran
+
+#endif
 
 //@} weze_output
 
@@ -1341,6 +1387,8 @@ void PrintWazStats(short poz)
 
   ptrZ = listaZwierz+poz;
   printf("\n");
+  printf("---- stan podswietlonego ----                         \n");
+
   if (ptrZ->z_zapas > 10)
     SetTekstKolor(KOLOR_DARKGREEN);
   else
@@ -1388,13 +1436,14 @@ void DrukujMape(void)
       wazB++;
     }
   SetKursorPoz(0,0);
-  printf("MAPA %ux%u: %lu (+%u)      \n", xSize, ySize, ileGen, czestoPokaz);
+  printf("MAPA %u x %u: %lu (+%u)      \n", xSize, ySize, ileGen, czestoPokaz);
   printf("weze: %u %u   \n", wazA, wazB);
   printf("dead: %lu   \n", martwe);
   if (pozZwierz >= 0)
     printf("wybrany: poz=%u id=%u     ", pozZwierz, (unsigned)listaZwierz[pozZwierz].z_id);
   else
     printf("nie wybrano                          ");
+  printf("\n");    
   printf("\n");
   for (y=0; y<ySize; y++)
     {
@@ -1404,7 +1453,7 @@ void DrukujMape(void)
     }
   printf("\n");
   SetTekstKolor(KOLOR_DARKGREY);
-  printf("Wcisnij SPACJE, 1,2,3,4,5 q(koniec)\n");
+  printf("Wcisnij ENTER, 1,2,3,4,5 q(koniec)\n");
   printf("d(debug +/-) p(pop) n(nast)\n");
   printf("strzalki - kierunek ruchu\n");
   printf("\n");
@@ -1444,7 +1493,7 @@ Parametry wywo³ania:
 void CzytajCmdLine(int argc, char* argv[])
 {
   short a;
-  
+
   if (argc >= 3) // odczytaj rozmiar
     {
     a = atoi(argv[1]);
@@ -1481,22 +1530,22 @@ int main(int argc, char* argv[])
   ZapelnijMape();
 
   DrukujMape();
-  znak = getch(); // praca krokowa
+  znak = getchar(); // praca krokowa
 
   while (1)
   {
   PrzetworzMape();
 
   tylko_pokaz: // tylko wyœwietl inaczej, bez przetwarzania
-  
+
   if ((ileGen % czestoPokaz)==0)
     {
     DrukujMape();
-    znak = getch(); // praca krokowa
+    znak = getchar(); // praca krokowa
     kierunek = 0;
     if (znak==0)
       {
-      kierunek = getch(); // HMKP
+      kierunek = getchar(); // HMKP
       }
     }
   SetTekstKolor(KOLOR_DARKGREY);
