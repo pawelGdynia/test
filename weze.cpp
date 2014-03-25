@@ -2,6 +2,49 @@
 //  weze.cpp - przetwarzanie
 //---------------------------
 
+/*---------------------------------------------------------------------------
+Symulacja inspirowana "conway game of life", przy bardziej skomplikowanym modelu:
+- baz¹ jest mapa, na której s¹ na³o¿one 3 warstwy:
+- grunt
+- roœliny
+- zwierzêta
+
+Dane s¹ przechowywane w tabeli mapa, na której ka¿dy punkt zawiera wskaŸnik na
+tabelê z obiektami 3 typów.
+
+Wciœniêcie Enter wykonuje kolejn¹ iteracjê przetwarzania,
+1,2,3,4,5 - ile iteracji wykonywaæ za ka¿dym potwierdzeniem (1,10,100,1000,10000)
+
+Grunt - mo¿e byæ typu gleba (rosn¹ roœliny), obszar martwy (nie rosn¹ roœliny ale
+zwierzêta mog¹ tam wchodziæ), i ocean - nie ma roœlin, nie ma wejœcia.
+
+Roœliny - rosn¹ od poziomu 1 do 10, gdy maj¹ 10 s¹ gotowe do zjadania przez zwierzêta
+(roslino¿erne). Wtedy zmienia siê ich poziom do 1, a w ka¿dym nastêpnym kroku wzrasta
+o 1 do maksymalnego.
+
+Zwierzêta - s¹ zdefiniowane 2 kategorie: roœlino¿erne i drapie¿ne.
+Przemieszczaj¹ siê po mapie do s¹siedniego punktu wybranego jako najlepszy
+(ale kolejnoœæ sprawdzania s¹siednich punktów jest pseudolosowa).
+
+W ka¿dym kroku zwierze magazynuje zapas energii przez zjadanie i zu¿ywa jak¹œ
+iloœæ (na ¿ycie). Jeœli poziom spadnie do zera - pada martwe.
+
+Na starcie generowana jest mapa z roœlino¿ercami w punktach x=y (po przek¹tnej mapy)
+i 2 drapie¿nikami w górnym lewym rogu.
+
+Wyœwietlanie - za pomoc¹ kolorów i ró¿nych znaków stan mapy jest wyœwietlany
+na konsoli, wraz z dodatkowymi informacjami opisowymi na temat aktualnego stanu.
+
+#define WIN 0/1 - okreœla czy kompilowaæ dla terminala windows czy dla linux.
+Wersja linux by³a sprawdzana w okienku terminalowym Cygwin64, ale kompilacja
+w prawdziwym linuxie te¿ dzia³a.
+
+
+Zadanie testowe - dodaæ 1 regu³ê:
+jeœli zwierze pada z g³odu (a nie poprzez zjadanie), to w tym punkcie mapy
+zostaje teren martwy - na którym ju¿ nic nie roœnie ani zwierze nie mo¿e wejœæ.
+
+---------------------------------------------------------------------------*/
 #pragma hdrstop
 #include <stdio.h>
 #include <string.h>
